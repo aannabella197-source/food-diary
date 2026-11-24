@@ -651,6 +651,39 @@ function App() {
               </section>
             )}
 
+            {settingsPage === 'О приложении' && (
+              <section className="settings-page about-page">
+                <div className="about-hero">
+                  <div className="about-app-icon">Д</div>
+                  <h2>Дневник питания</h2>
+                  <p>Личный дневник для наблюдения за питанием и повседневными привычками.</p>
+                  <span>Версия 1.0.0</span>
+                </div>
+
+                <div className="about-section">
+                  <h3>Как хранятся данные</h3>
+                  <p>Записи хранятся на устройстве. Дневник рассчитан на работу без постоянного подключения к интернету. Автоматической синхронизации между устройствами нет.</p>
+                </div>
+
+                <div className="about-section">
+                  <h3>Резервное копирование</h3>
+                  <p>Чтобы перенести данные или защитить их от потери, периодически создавай резервную копию в OneDrive.</p>
+                  <ol>
+                    <li>Открой раздел «Ещё» → «Резервное копирование».</li>
+                    <li>Нажми «Создать копию» и сохрани файл в OneDrive.</li>
+                    <li>Для восстановления выбери ранее созданную копию в этом же разделе.</li>
+                  </ol>
+                </div>
+
+                <div className="about-section">
+                  <h3>Экспорт данных</h3>
+                  <p>В разделе «Ещё» → «Экспорт данных» можно будет выбрать формат Excel или CSV, период и состав данных для выгрузки.</p>
+                </div>
+
+                <p className="about-disclaimer">Дневник предназначен для личных записей и не является медицинским приложением.</p>
+              </section>
+            )}
+
             {settingsPage === 'Резервное копирование' && (
               <section className="settings-page backup-page">
                 <p className="muted">Сохраняй копию дневника в OneDrive, чтобы при необходимости восстановить свои данные.</p>
@@ -696,7 +729,7 @@ function App() {
               </section>
             )}
 
-            {settingsPage && settingsPage !== 'Оформление' && settingsPage !== 'Управление тегами' && settingsPage !== 'Экспорт данных' && settingsPage !== 'Резервное копирование' && (
+            {settingsPage && settingsPage !== 'Оформление' && settingsPage !== 'Управление тегами' && settingsPage !== 'Экспорт данных' && settingsPage !== 'Резервное копирование' && settingsPage !== 'О приложении' && (
               <section className="settings-page">
                 <p className="muted">Раздел настроек</p>
                 <h2>{settingsPage}</h2>
