@@ -928,3 +928,29 @@ body[data-theme="dark"] .export-included{border-color:#414a3b;color:#dce5d2}
 body[data-theme="dark"] .export-included small,body[data-theme="dark"] .export-preview>div span{color:#a5af9b}
 body[data-theme="dark"] .export-preview>div{border-color:#414a3b}
 body[data-theme="dark"] .export-preview>div strong{color:#d0ddc2}
+
+
+/* Резервное копирование */
+.backup-page{display:flex;flex-direction:column;gap:16px}
+.backup-status-card{display:flex;align-items:center;gap:13px;padding:17px;border:1px solid #e4e9dc;border-radius:15px;background:#f7f9f3}
+.backup-status-icon{display:grid;place-items:center;flex:0 0 43px;width:43px;height:43px;border-radius:13px;background:#e8eddf;color:#71845e;font-size:25px}
+.backup-status-card strong,.backup-action-copy strong{display:block;color:#526348;font-size:14px;font-weight:600}
+.backup-status-card p,.backup-action-copy p{margin:6px 0 0;color:#92998c;font-size:12px;line-height:1.5}
+.backup-actions{display:flex;flex-direction:column;gap:12px}
+.backup-action-card{display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:17px;border:1px solid #e7eadf;border-radius:15px;background:#fff}
+.backup-action-icon{display:grid;place-items:center;width:36px;height:36px;border-radius:11px;background:#edf1e6;color:#71845e;font-size:23px}
+.backup-action-copy p{margin-top:5px}
+.backup-button{width:100%;padding:12px;border:0;border-radius:11px;background:#82976c;color:#fff;font-size:14px;font-weight:600}
+.backup-button.secondary{border:1px solid #dce4d3;background:#f7f9f3;color:#64765a}
+.backup-button:disabled{opacity:.55}
+.backup-section{padding:17px;border:1px solid #e7eadf;border-radius:15px;background:#fff}
+.backup-section h2{margin:0 0 12px;color:#58664e;font-size:16px}
+.backup-includes{display:flex;flex-direction:column;gap:10px;margin:0;padding-left:19px;color:#68745f;font-size:13px;line-height:1.45}
+.backup-includes li::marker{color:#82976c}
+.backup-note{margin:0;padding:0 4px;color:#92998c;font-size:11px;line-height:1.6}
+body[data-theme="dark"] .backup-status-card{border-color:#414a3b;background:#343c30}
+body[data-theme="dark"] .backup-status-icon,body[data-theme="dark"] .backup-action-icon{background:#394332;color:#d0ddc2}
+body[data-theme="dark"] .backup-status-card strong,body[data-theme="dark"] .backup-action-copy strong{color:#dce5d2}
+body[data-theme="dark"] .backup-action-card,body[data-theme="dark"] .backup-section{border-color:#414a3b;background:#292f27}
+body[data-theme="dark"] .backup-section h2,body[data-theme="dark"] .backup-includes{color:#c2ceb7}
+body[data-theme="dark"] .backup-button.secondary{border-color:#526047;background:#343c30;color:#d0ddc2}
