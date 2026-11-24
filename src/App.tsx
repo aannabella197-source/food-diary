@@ -140,6 +140,13 @@ function App() {
   const [tagIcon, setTagIcon] = useState('◇');
   const [tagIcons, setTagIcons] = useState<Record<string, string>>(() => JSON.parse(localStorage.getItem('food-diary-tag-icons') || '{}'));
   const [deleteTag, setDeleteTag] = useState<string | null>(null);
+  const [exportFormat, setExportFormat] = useState<'Excel (.xlsx)' | 'CSV (.csv)'>('Excel (.xlsx)');
+  const [exportPeriod, setExportPeriod] = useState('Все записи');
+  const [exportFrom, setExportFrom] = useState('2026-11-01');
+  const [exportTo, setExportTo] = useState('2026-11-24');
+  const [includeTags, setIncludeTags] = useState(true);
+  const [includeCarbs, setIncludeCarbs] = useState(true);
+  const [includeHunger, setIncludeHunger] = useState(true);
 
   useEffect(() => {
     localStorage.setItem('food-diary-food-tags', JSON.stringify(foodTags));
@@ -597,7 +604,54 @@ function App() {
               </section>
             )}
 
-            {settingsPage && settingsPage !== 'Оформление' && settingsPage !== 'Управление тегами' && (
+            {settingsPage === 'Экспорт данных' && (
+              <section className="settings-page export-page">
+                <div className="export-section">
+                  <h2>Формат файла</h2>
+                  <div className="export-choice-row">
+                    {(['Excel (.xlsx)', 'CSV (.csv)'] as const).map((format) => (
+                      <button key={format} className={exportFormat === format ? 'export-choice active' : 'export-choice'} onClick={() => setExportFormat(format)}>
+                        <span className="export-radio">{exportFormat === format ? '✓' : ''}</span>
+                        {format}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="export-section">
+                  <h2>Период</h2>
+                  <select className="export-select" value={exportPeriod} onChange={(event) => setExportPeriod(event.target.value)}>
+                    {['Все записи', 'Текущий месяц', 'Последние 30 дней', 'Последние 7 дней', 'Произвольный период'].map((item) => <option key={item}>{item}</option>)}
+                  </select>
+                  {exportPeriod === 'Произвольный период' && (
+                    <div className="date-range export-date-range">
+                      <label>С даты<input type="date" value={exportFrom} onChange={(event) => setExportFrom(event.target.value)} /></label>
+                      <label>По дату<input type="date" value={exportTo} onChange={(event) => setExportTo(event.target.value)} /></label>
+                    </div>
+                  )}
+                </div>
+                <div className="export-section">
+                  <h2>Какие данные включить</h2>
+                  <div className="export-includes">
+                    <div className="export-included required"><span className="export-check">✓</span><span><strong>Дата и время</strong><small>Обязательно для каждой записи</small></span><em>Обязательно</em></div>
+                    <div className="export-included required"><span className="export-check">✓</span><span><strong>Описание еды</strong><small>Текст и порция</small></span><em>Обязательно</em></div>
+                    <button className="export-included" onClick={() => setIncludeTags(!includeTags)}><span className={includeTags ? 'export-check checked' : 'export-check'}>{includeTags ? '✓' : ''}</span><span><strong>Теги и активность</strong><small>Категории и выбранные отметки</small></span></button>
+                    <button className="export-included" onClick={() => setIncludeCarbs(!includeCarbs)}><span className={includeCarbs ? 'export-check checked' : 'export-check'}>{includeCarbs ? '✓' : ''}</span><span><strong>Углеводы и комментарии</strong><small>Количество углеводов и заметки</small></span></button>
+                    <button className="export-included" onClick={() => setIncludeHunger(!includeHunger)}><span className={includeHunger ? 'export-check checked' : 'export-check'}>{includeHunger ? '✓' : ''}</span><span><strong>Голод и настроение</strong><small>Дополнительные поля записи</small></span></button>
+                  </div>
+                </div>
+                <div className="export-preview">
+                  <h2>Предварительный просмотр</h2>
+                  <div><span>Формат</span><strong>{exportFormat}</strong></div>
+                  <div><span>Период</span><strong>{exportPeriod === 'Произвольный период' ? `${exportFrom} — ${exportTo}` : exportPeriod}</strong></div>
+                  <div><span>Записей для экспорта</span><strong>{journalEntries.length}</strong></div>
+                  <p>Описание еды, даты и время будут включены в файл.</p>
+                </div>
+                <button className="export-button" disabled>Экспортировать файл</button>
+                <p className="export-note">Создание файла появится после подключения функции экспорта.</p>
+              </section>
+            )}
+
+            {settingsPage && settingsPage !== 'Оформление' && settingsPage !== 'Управление тегами' && settingsPage !== 'Экспорт данных' && (
               <section className="settings-page">
                 <p className="muted">Раздел настроек</p>
                 <h2>{settingsPage}</h2>
