@@ -793,7 +793,7 @@ function App() {
                     </div>
                     <span className="total">{chartTotal} записей</span>
                   </div>
-                  <div className={`chart ${period === 'Месяц' ? 'month-chart' : period === 'Год' ? 'year-chart' : ''}`}>
+                  <div className={`chart ${period === 'Неделя' ? 'week-chart' : period === 'Месяц' ? 'month-chart' : period === 'Год' ? 'year-chart' : ''}`}>
                     {chartData.map((item, index) => (
                       <div className="chart-column" key={`${period}-${item.label}-${index}`}>
                         <span className="bar-count">{item.count}</span>
