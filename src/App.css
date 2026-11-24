@@ -770,8 +770,18 @@ h2 {
   text-align: left;
 }
 
+.settings-title-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
 .settings-back {
+  display: grid;
+  place-items: center;
   flex: 0 0 42px;
+  padding: 0;
+  line-height: 1;
 }
 
 .settings-page {
