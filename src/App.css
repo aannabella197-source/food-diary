@@ -813,7 +813,8 @@ h2 {
 .theme-option-copy small { color:#858e7c; font-size:12px; line-height:1.4; }
 
 /* Тёмная тема */
-body[data-theme="dark"] { background:#1d211c; color:#e2e7dc; }
+body[data-theme="dark"] { background:#1d211c; color:#e2e7dc; color-scheme:dark; }
+body[data-theme="light"] { color-scheme:light; }
 body[data-theme="dark"] .app { color:#e2e7dc; }
 body[data-theme="dark"] h1, body[data-theme="dark"] h2, body[data-theme="dark"] h3 { color:#edf1e8; }
 body[data-theme="dark"] .muted, body[data-theme="dark"] .eyebrow { color:#a0aa96; }
@@ -833,3 +834,18 @@ body[data-theme="dark"] .nav-item { color:#a0aa96; }
 body[data-theme="dark"] .nav-item.selected { color:#b9cea3; }
 body[data-theme="dark"] .save-button, body[data-theme="dark"] .add-button { background:#71885d; }
 body[data-theme="dark"] .expand-fields { border-color:#667657; color:#c1d1ae; }
+
+body[data-theme="dark"] .field-label,
+body[data-theme="dark"] .editor-section-title,
+body[data-theme="dark"] .hunger-scale,
+body[data-theme="dark"] .journal-day h3,
+body[data-theme="dark"] .filter-heading,
+body[data-theme="dark"] .date-range label,
+body[data-theme="dark"] .show-tags,
+body[data-theme="dark"] .field-with-unit,
+body[data-theme="dark"] .reset-filters {
+  color: #c2ceb7;
+}
+body[data-theme="dark"] #root {
+  border-color: #343c30;
+}
