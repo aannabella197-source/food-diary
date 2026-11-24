@@ -1,9 +1,10 @@
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import './App.css';
 
 type Period = 'Неделя' | 'Месяц' | 'Год';
 type Tab = 'Динамика' | 'Журнал' | 'Ещё';
+type Theme = 'light' | 'dark' | 'system';
 type JournalPeriod =
   | 'Все записи'
   | 'Сегодня'
@@ -128,6 +129,26 @@ function App() {
   const [period, setPeriod] = useState<Period>('Неделя');
   const [tab, setTab] = useState<Tab>('Динамика');
   const [settingsPage, setSettingsPage] = useState<string | null>(null);
+  const [theme, setTheme] = useState<Theme>(() => {
+    const savedTheme = localStorage.getItem('food-diary-theme');
+    return savedTheme === 'light' || savedTheme === 'dark' ? savedTheme : 'system';
+  });
+
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const applyTheme = () => {
+      const isDark = theme === 'dark' || (theme === 'system' && media.matches);
+      document.body.dataset.theme = isDark ? 'dark' : 'light';
+    };
+
+    applyTheme();
+    localStorage.setItem('food-diary-theme', theme);
+
+    if (theme === 'system') {
+      media.addEventListener('change', applyTheme);
+      return () => media.removeEventListener('change', applyTheme);
+    }
+  }, [theme]);
   const [editorOpen, setEditorOpen] = useState(false);
   const [showAllFields, setShowAllFields] = useState(false);
   const [showAllFoodTags, setShowAllFoodTags] = useState(false);
@@ -435,7 +456,32 @@ function App() {
           </header>
 
           <main>
-            {settingsPage && (
+            {settingsPage === 'Оформление' && (
+              <section className="settings-page">
+                <p className="muted">Выбери, как будет выглядеть дневник</p>
+                <div className="theme-options">
+                  {([
+                    { value: 'light', label: 'Светлая', description: 'Светлый фон и спокойные зелёные оттенки' },
+                    { value: 'dark', label: 'Тёмная', description: 'Тёмный фон, комфортный при слабом освещении' },
+                    { value: 'system', label: 'Системная', description: 'Как в настройках устройства' },
+                  ] as { value: Theme; label: string; description: string }[]).map((option) => (
+                    <button
+                      key={option.value}
+                      className={theme === option.value ? 'theme-option selected' : 'theme-option'}
+                      onClick={() => setTheme(option.value)}
+                    >
+                      <span className="theme-radio" aria-hidden="true">{theme === option.value ? '✓' : ''}</span>
+                      <span className="theme-option-copy">
+                        <strong>{option.label}</strong>
+                        <small>{option.description}</small>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {settingsPage && settingsPage !== 'Оформление' && (
               <section className="settings-page">
                 <p className="muted">Раздел настроек</p>
                 <h2>{settingsPage}</h2>
