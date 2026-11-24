@@ -36,39 +36,7 @@ const defaultActivityTags = [
   'Прогулка', 'Домашние дела', 'Тренировка', 'Отдых', 'Работа',
 ];
 
-const weekData = [
-  { day: 'Пн', date: '18', count: 3 },
-  { day: 'Вт', date: '19', count: 4 },
-  { day: 'Ср', date: '20', count: 2 },
-  { day: 'Чт', date: '21', count: 5 },
-  { day: 'Пт', date: '22', count: 3 },
-  { day: 'Сб', date: '23', count: 4 },
-  { day: 'Вс', date: '24', count: 0 },
-];
-const monthData = Array.from({ length: 30 }, (_, index) => {
-  const day = index + 1;
-  const weekItem = weekData.find((item) => Number(item.date) === day);
-  return { label: String(day), count: weekItem?.count ?? 0 };
-});
-
-const yearData = [
-  { label: 'Jan', count: 0 }, { label: 'Feb', count: 0 },
-  { label: 'Mar', count: 0 }, { label: 'Apr', count: 0 },
-  { label: 'May', count: 0 }, { label: 'Jun', count: 0 },
-  { label: 'Jul', count: 0 }, { label: 'Aug', count: 0 },
-  { label: 'Sep', count: 0 }, { label: 'Oct', count: 0 },
-  { label: 'Nov', count: 21 }, { label: 'Dec', count: 0 },
-];
-
-
-const entries = [
-  { time: '08:30', tags: ['Завтрак', 'Молочное'] },
-  { time: '12:45', tags: ['Обед', 'Мясное', 'Овощи'] },
-  { time: '16:10', tags: ['Перекус', 'Фрукты'] },
-  { time: '19:20', tags: ['Ужин', 'Крупы'] },
-];
-
-const journalEntries: JournalEntry[] = [
+const demoJournalEntries: JournalEntry[] = [
   {
     id: 1,
     date: '2026-11-24',
@@ -142,6 +110,11 @@ const journalPeriods: JournalPeriod[] = [
 
 function App() {
   const [period, setPeriod] = useState<Period>('Неделя');
+  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>(() => { const saved = localStorage.getItem('food-diary-entries'); return saved ? JSON.parse(saved) as JournalEntry[] : demoJournalEntries; });
+  const [entryDate, setEntryDate] = useState(() => { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; });
+  const [entryTime, setEntryTime] = useState(() => new Date().toTimeString().slice(0, 5));
+  const [entryFood, setEntryFood] = useState('');
+  const [entryCarbs, setEntryCarbs] = useState('');
   const [tab, setTab] = useState<Tab>('Динамика');
   const [settingsPage, setSettingsPage] = useState<string | null>(null);
   const [aboutSections, setAboutSections] = useState({ storage: false, backup: false, export: false });
@@ -163,6 +136,8 @@ function App() {
   const [includeTags, setIncludeTags] = useState(true);
   const [includeCarbs, setIncludeCarbs] = useState(true);
   const [includeHunger, setIncludeHunger] = useState(true);
+
+  useEffect(() => { localStorage.setItem('food-diary-entries', JSON.stringify(journalEntries)); }, [journalEntries]);
 
   useEffect(() => {
     localStorage.setItem('food-diary-food-tags', JSON.stringify(foodTags));
@@ -275,6 +250,10 @@ function App() {
   };
 
   const openEditor = () => {
+    const now = new Date();
+    setEntryDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`);
+    setEntryTime(now.toTimeString().slice(0, 5));
+    setEntryFood(''); setEntryCarbs('');
     setSelectedTags([]);
     setShowAllFields(false);
     setShowAllFoodTags(false);
@@ -282,6 +261,18 @@ function App() {
     setHunger(3);
     setMood('');
     setEditorOpen(true);
+  };
+
+  const saveEntry = () => {
+    if (!entryFood.trim()) return;
+    const nextEntry: JournalEntry = {
+      id: Date.now(), date: entryDate, time: entryTime, food: entryFood.trim(),
+      tags: selectedTags.filter((tag) => foodTags.includes(tag)),
+      activity: selectedTags.filter((tag) => activityTags.includes(tag)),
+      carbs: entryCarbs.trim() ? Number(entryCarbs) : null, comment: '',
+    };
+    setJournalEntries((current) => [...current, nextEntry]);
+    setEditorOpen(false);
   };
 
   const today = new Date();
@@ -373,13 +364,17 @@ function App() {
     return groups;
   }, []);
 
+  const toDateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const countForDate = (dateKey: string) => journalEntries.filter((entry) => entry.date === dateKey).length;
+  const weekStart = new Date(today);
+  weekStart.setDate(today.getDate() - ((today.getDay() + 6) % 7));
   const chartData = period === 'Неделя'
-    ? weekData.map((item) => ({ label: item.day, date: item.date, count: item.count }))
+    ? Array.from({ length: 7 }, (_, index) => { const date = new Date(weekStart); date.setDate(weekStart.getDate() + index); return { label: date.toLocaleDateString('ru-RU', { weekday: 'short' }).replace('.', ''), date: String(date.getDate()), count: countForDate(toDateKey(date)) }; })
     : period === 'Месяц'
-      ? monthData.map((item) => ({ label: item.label, date: '', count: item.count }))
-      : yearData.map((item) => ({ label: item.label, date: '', count: item.count }));
+      ? Array.from({ length: new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate() }, (_, index) => { const date = new Date(today.getFullYear(), today.getMonth(), index + 1); return { label: String(index + 1), date: '', count: countForDate(toDateKey(date)) }; })
+      : Array.from({ length: 12 }, (_, index) => ({ label: new Date(today.getFullYear(), index, 1).toLocaleDateString('en-US', { month: 'short' }), date: '', count: journalEntries.filter((entry) => entry.date.startsWith(`${today.getFullYear()}-${String(index + 1).padStart(2, '0')}`)).length }));
   const chartTotal = chartData.reduce((sum, item) => sum + item.count, 0);
-  const chartTitle = period === 'Неделя' ? 'Эта неделя' : period === 'Месяц' ? 'Ноябрь 2026' : '2026 год';
+  const chartTitle = period === 'Неделя' ? 'Эта неделя' : period === 'Месяц' ? today.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' }) : `${today.getFullYear()} год`;
 
   const formatDate = (date: string) => {
     return new Date(`${date}T12:00:00`).toLocaleDateString('ru-RU', {
@@ -405,11 +400,11 @@ function App() {
               <div className="date-time-row">
                 <label className="field-label">
                   Дата
-                  <input type="date" defaultValue="2026-11-24" />
+                  <input type="date" value={entryDate} onChange={(event) => setEntryDate(event.target.value)} />
                 </label>
                 <label className="field-label">
                   Время
-                  <input type="time" defaultValue="08:30" />
+                  <input type="time" value={entryTime} onChange={(event) => setEntryTime(event.target.value)} />
                 </label>
               </div>
             </section>
@@ -419,6 +414,8 @@ function App() {
                 Еда
                 <textarea
                   rows={3}
+                  value={entryFood}
+                  onChange={(event) => setEntryFood(event.target.value)}
                   placeholder="Какая была еда и какая была порция? Например: 150 г, тарелка, 2 кусочка"
                 />
               </label>
@@ -448,7 +445,7 @@ function App() {
             <section className="editor-card">
               <div className="editor-section-title">Углеводы</div>
               <div className="field-with-unit">
-                <input type="number" placeholder="0" />
+                <input type="number" min="0" placeholder="0" value={entryCarbs} onChange={(event) => setEntryCarbs(event.target.value)} />
                 <span>г</span>
               </div>
             </section>
@@ -528,7 +525,7 @@ function App() {
               </>
             )}
 
-            <button className="save-button" onClick={() => setEditorOpen(false)}>
+            <button className="save-button" onClick={saveEntry} disabled={!entryFood.trim()}>
               Сохранить запись
             </button>
           </main>
