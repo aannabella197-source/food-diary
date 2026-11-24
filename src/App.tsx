@@ -129,6 +129,7 @@ function App() {
   const [period, setPeriod] = useState<Period>('Неделя');
   const [tab, setTab] = useState<Tab>('Динамика');
   const [settingsPage, setSettingsPage] = useState<string | null>(null);
+  const [aboutSections, setAboutSections] = useState({ storage: false, backup: false, export: false });
   const [foodTags, setFoodTags] = useState<string[]>(() => JSON.parse(localStorage.getItem('food-diary-food-tags') || 'null') || defaultFoodTags);
   const [activityTags, setActivityTags] = useState<string[]>(() => JSON.parse(localStorage.getItem('food-diary-activity-tags') || 'null') || defaultActivityTags);
   const [disabledFoodTags, setDisabledFoodTags] = useState<string[]>(() => JSON.parse(localStorage.getItem('food-diary-disabled-food-tags') || '[]'));
@@ -657,30 +658,40 @@ function App() {
                   <div className="about-app-icon">Д</div>
                   <h2>Дневник питания</h2>
                   <p>Личный дневник для наблюдения за питанием и повседневными привычками.</p>
-                  <span>Версия 1.0.0</span>
                 </div>
 
                 <div className="about-section">
-                  <h3>Как хранятся данные</h3>
-                  <p>Записи хранятся на устройстве. Дневник рассчитан на работу без постоянного подключения к интернету. Автоматической синхронизации между устройствами нет.</p>
+                  <button className="about-section-toggle" onClick={() => setAboutSections((current) => ({ ...current, storage: !current.storage }))} aria-expanded={aboutSections.storage}>
+                    <span>Как хранятся данные</span><span className="about-section-chevron">{aboutSections.storage ? '⌃' : '⌄'}</span>
+                  </button>
+                  {aboutSections.storage && <p className="about-section-content">Записи хранятся на устройстве. Дневник рассчитан на работу без постоянного подключения к интернету. Автоматической синхронизации между устройствами нет.</p>}
                 </div>
 
                 <div className="about-section">
-                  <h3>Резервное копирование</h3>
-                  <p>Чтобы перенести данные или защитить их от потери, периодически создавай резервную копию в OneDrive.</p>
-                  <ol>
-                    <li>Открой раздел «Ещё» → «Резервное копирование».</li>
-                    <li>Нажми «Создать копию» и сохрани файл в OneDrive.</li>
-                    <li>Для восстановления выбери ранее созданную копию в этом же разделе.</li>
-                  </ol>
+                  <button className="about-section-toggle" onClick={() => setAboutSections((current) => ({ ...current, backup: !current.backup }))} aria-expanded={aboutSections.backup}>
+                    <span>Резервное копирование</span><span className="about-section-chevron">{aboutSections.backup ? '⌃' : '⌄'}</span>
+                  </button>
+                  {aboutSections.backup && (
+                    <div className="about-section-content">
+                      <p>Чтобы перенести данные или защитить их от потери, периодически создавай резервную копию в OneDrive.</p>
+                      <ol>
+                        <li>Открой раздел «Ещё» → «Резервное копирование».</li>
+                        <li>Нажми «Создать копию» и сохрани файл в OneDrive.</li>
+                        <li>Для восстановления выбери ранее созданную копию в этом же разделе.</li>
+                      </ol>
+                    </div>
+                  )}
                 </div>
 
                 <div className="about-section">
-                  <h3>Экспорт данных</h3>
-                  <p>В разделе «Ещё» → «Экспорт данных» можно будет выбрать формат Excel или CSV, период и состав данных для выгрузки.</p>
+                  <button className="about-section-toggle" onClick={() => setAboutSections((current) => ({ ...current, export: !current.export }))} aria-expanded={aboutSections.export}>
+                    <span>Экспорт данных</span><span className="about-section-chevron">{aboutSections.export ? '⌃' : '⌄'}</span>
+                  </button>
+                  {aboutSections.export && <p className="about-section-content">В разделе «Ещё» → «Экспорт данных» можно будет выбрать формат Excel или CSV, период и состав данных для выгрузки.</p>}
                 </div>
 
                 <p className="about-disclaimer">Дневник предназначен для личных записей и не является медицинским приложением.</p>
+                <p className="about-version">Версия 1.0.0</p>
               </section>
             )}
 
