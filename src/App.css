@@ -891,3 +891,40 @@ body[data-theme="dark"] .tag-icon-picker button,body[data-theme="dark"] .tag-edi
 body[data-theme="dark"] .tag-icon-picker button.selected,body[data-theme="dark"] .tag-edit-actions button.primary{background:#596d49;color:#fff}
 body[data-theme="dark"] .managed-tag-icon{background:#394332;color:#d0ddc2}
 body[data-theme="dark"] .tag-delete-confirm{border-color:#414a3b}
+
+
+/* Экспорт данных */
+.export-page{display:flex;flex-direction:column;gap:16px}
+.export-section,.export-preview{padding:17px;border:1px solid #e7eadf;border-radius:15px;background:#fff}
+.export-section h2,.export-preview h2{margin:0 0 13px;color:#58664e;font-size:16px}
+.export-choice-row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.export-choice{display:flex;align-items:center;gap:8px;padding:12px 10px;border:1px solid #e4e9dc;border-radius:11px;background:#f8f9f5;color:#64715b;font-size:13px}
+.export-choice.active{border-color:#82976c;background:#edf2e6;color:#465c3b}
+.export-radio{display:grid;place-items:center;width:19px;height:19px;border:1px solid #aab49d;border-radius:50%;font-size:12px}
+.export-choice.active .export-radio{border-color:#82976c;background:#82976c;color:#fff}
+.export-select{width:100%;padding:12px;border:1px solid #e4e9dc;border-radius:11px;background:#f8f9f5;color:#465344;font:inherit;font-size:14px}
+.export-date-range{margin-top:13px}
+.export-includes{display:flex;flex-direction:column;gap:5px}
+.export-included{display:flex;align-items:center;gap:11px;width:100%;padding:11px 2px;border:0;border-bottom:1px solid #edf0e8;background:transparent;color:#394334;text-align:left}
+.export-included>span:nth-child(2){display:flex;flex:1;flex-direction:column;gap:4px}
+.export-included strong{font-size:13px;font-weight:600}
+.export-included small{color:#92998c;font-size:11px}
+.export-included em{color:#8b967f;font-size:10px;font-style:normal}
+.export-check{display:grid;place-items:center;flex:0 0 21px;width:21px;height:21px;border:1px solid #b9c2af;border-radius:6px;color:#fff;font-size:13px}
+.export-check.checked,.export-included.required .export-check{border-color:#82976c;background:#82976c}
+.export-preview{background:#f9faf6}
+.export-preview>div{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #e9ede2;font-size:12px}
+.export-preview>div span{color:#858e7c}
+.export-preview>div strong{color:#526348;text-align:right;font-weight:600}
+.export-preview p,.export-note{margin:12px 0 0;color:#92998c;font-size:11px;line-height:1.5}
+.export-button{width:100%;padding:15px;border:0;border-radius:13px;background:#82976c;color:#fff;font-size:15px;font-weight:600}
+.export-button:disabled{opacity:.55}
+.export-note{text-align:center;margin-top:-8px}
+body[data-theme="dark"] .export-section,body[data-theme="dark"] .export-preview{border-color:#414a3b;background:#292f27}
+body[data-theme="dark"] .export-section h2,body[data-theme="dark"] .export-preview h2{color:#c2ceb7}
+body[data-theme="dark"] .export-choice,body[data-theme="dark"] .export-select{border-color:#414a3b;background:#343c30;color:#d0ddc2}
+body[data-theme="dark"] .export-choice.active{border-color:#91a77a;background:#46553b;color:#edf4e6}
+body[data-theme="dark"] .export-included{border-color:#414a3b;color:#dce5d2}
+body[data-theme="dark"] .export-included small,body[data-theme="dark"] .export-preview>div span{color:#a5af9b}
+body[data-theme="dark"] .export-preview>div{border-color:#414a3b}
+body[data-theme="dark"] .export-preview>div strong{color:#d0ddc2}
