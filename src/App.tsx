@@ -651,7 +651,52 @@ function App() {
               </section>
             )}
 
-            {settingsPage && settingsPage !== 'Оформление' && settingsPage !== 'Управление тегами' && settingsPage !== 'Экспорт данных' && (
+            {settingsPage === 'Резервное копирование' && (
+              <section className="settings-page backup-page">
+                <p className="muted">Сохраняй копию дневника в OneDrive, чтобы при необходимости восстановить свои данные.</p>
+
+                <div className="backup-status-card">
+                  <div className="backup-status-icon">☁</div>
+                  <div>
+                    <strong>Резервных копий пока нет</strong>
+                    <p>После создания копии здесь появятся дата, время и размер последнего файла.</p>
+                  </div>
+                </div>
+
+                <div className="backup-actions">
+                  <div className="backup-action-card">
+                    <div className="backup-action-icon">＋</div>
+                    <div className="backup-action-copy">
+                      <strong>Создать резервную копию</strong>
+                      <p>Сохранить текущие данные дневника в OneDrive.</p>
+                    </div>
+                    <button className="backup-button" disabled>Создать копию</button>
+                  </div>
+
+                  <div className="backup-action-card">
+                    <div className="backup-action-icon">↻</div>
+                    <div className="backup-action-copy">
+                      <strong>Восстановить данные</strong>
+                      <p>Загрузить ранее сохранённую копию из OneDrive.</p>
+                    </div>
+                    <button className="backup-button secondary" disabled>Восстановить</button>
+                  </div>
+                </div>
+
+                <div className="backup-section">
+                  <h2>Что входит в копию</h2>
+                  <ul className="backup-includes">
+                    <li>Все записи дневника: еда, дата и время</li>
+                    <li>Теги и их настройки</li>
+                    <li>Настройки оформления и редактора</li>
+                  </ul>
+                </div>
+
+                <p className="backup-note">Резервное копирование выполняется вручную. Автоматической синхронизации с OneDrive не будет. Функции создания и восстановления подключим на следующем этапе.</p>
+              </section>
+            )}
+
+            {settingsPage && settingsPage !== 'Оформление' && settingsPage !== 'Управление тегами' && settingsPage !== 'Экспорт данных' && settingsPage !== 'Резервное копирование' && (
               <section className="settings-page">
                 <p className="muted">Раздел настроек</p>
                 <h2>{settingsPage}</h2>
