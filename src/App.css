@@ -757,3 +757,36 @@ h2 {
   color: #92998c;
   font-size: 13px;
 }
+
+
+
+/* Экраны настроек */
+.setting-item {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid #e5e9dc;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.settings-back {
+  flex: 0 0 42px;
+}
+
+.settings-page {
+  padding: 18px 4px;
+}
+
+.settings-page h2 {
+  margin: 8px 0 16px;
+}
+
+.settings-placeholder {
+  padding: 18px;
+  border-radius: 14px;
+  background: white;
+  color: #92998c;
+  font-size: 14px;
+  line-height: 1.5;
+}
