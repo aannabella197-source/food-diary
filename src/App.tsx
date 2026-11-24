@@ -127,6 +127,7 @@ const journalPeriods: JournalPeriod[] = [
 function App() {
   const [period, setPeriod] = useState<Period>('Неделя');
   const [tab, setTab] = useState<Tab>('Динамика');
+  const [settingsPage, setSettingsPage] = useState<string | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [showAllFields, setShowAllFields] = useState(false);
   const [showAllFoodTags, setShowAllFoodTags] = useState(false);
@@ -423,13 +424,24 @@ function App() {
           <header className="topbar">
             <div>
               <p className="eyebrow">МОЙ ДНЕВНИК</p>
-              <h1>{tab}</h1>
+              {settingsPage && (
+                <button className="back-button settings-back" onClick={() => setSettingsPage(null)} aria-label="Назад">←</button>
+              )}
+              <h1>{settingsPage || tab}</h1>
             </div>
             <div className="profile-mark">Д</div>
           </header>
 
           <main>
-            {tab === 'Динамика' && (
+            {settingsPage && (
+              <section className="settings-page">
+                <p className="muted">Раздел настроек</p>
+                <h2>{settingsPage}</h2>
+                <p className="settings-placeholder">Этот экран открыт. Его содержимое и функции добавим на следующем этапе.</p>
+              </section>
+            )}
+
+            {!settingsPage && tab === 'Динамика' && (
               <>
                 <section className="period-switch">
                   {(['Неделя', 'Месяц', 'Год'] as Period[]).map((item) => (
@@ -488,7 +500,7 @@ function App() {
               </>
             )}
 
-            {tab === 'Журнал' && (
+            {!settingsPage && tab === 'Журнал' && (
               <section className="journal">
                 <div className="journal-search">
                   <input
@@ -622,32 +634,32 @@ function App() {
               </section>
             )}
 
-            {tab === 'Ещё' && (
+            {!settingsPage && tab === 'Ещё' && (
               <section className="settings-list">
                 <h2>Настройки</h2>
                 {['Управление тегами', 'Резервное копирование', 'Экспорт данных', 'Оформление', 'О приложении'].map((item) => (
-                  <div className="setting-item" key={item}>
+                  <button className="setting-item" key={item} onClick={() => setSettingsPage(item)}>
                     {item}<span>›</span>
-                  </div>
+                  </button>
                 ))}
               </section>
             )}
           </main>
 
-          <button className="add-button" aria-label="Добавить запись" onClick={openEditor}>+</button>
+          {!settingsPage && <button className="add-button" aria-label="Добавить запись" onClick={openEditor}>+</button>}
 
-          <nav className="bottom-nav">
+          {!settingsPage && <nav className="bottom-nav">
             {(['Динамика', 'Журнал', 'Ещё'] as Tab[]).map((item, index) => (
               <button
                 key={item}
                 className={tab === item ? 'nav-item selected' : 'nav-item'}
-                onClick={() => setTab(item)}
+                onClick={() => { setSettingsPage(null); setTab(item); }}
               >
                 <span className="nav-symbol">{['◷', '▤', '•••'][index]}</span>
                 <span>{item}</span>
               </button>
             ))}
-          </nav>
+          </nav>}
         </>
       )}
     </div>
