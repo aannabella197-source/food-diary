@@ -424,10 +424,12 @@ function App() {
           <header className="topbar">
             <div>
               <p className="eyebrow">МОЙ ДНЕВНИК</p>
-              {settingsPage && (
-                <button className="back-button settings-back" onClick={() => setSettingsPage(null)} aria-label="Назад">←</button>
-              )}
-              <h1>{settingsPage || tab}</h1>
+              <div className={settingsPage ? "settings-title-row" : ""}>
+                {settingsPage && (
+                  <button className="back-button settings-back" onClick={() => setSettingsPage(null)} aria-label="Назад">←</button>
+                )}
+                <h1>{settingsPage || tab}</h1>
+              </div>
             </div>
             <div className="profile-mark">Д</div>
           </header>
