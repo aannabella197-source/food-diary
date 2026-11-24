@@ -45,6 +45,21 @@ const weekData = [
   { day: 'Сб', date: '23', count: 4 },
   { day: 'Вс', date: '24', count: 0 },
 ];
+const monthData = Array.from({ length: 30 }, (_, index) => {
+  const day = index + 1;
+  const weekItem = weekData.find((item) => Number(item.date) === day);
+  return { label: String(day), count: weekItem?.count ?? 0 };
+});
+
+const yearData = [
+  { label: 'Jan', count: 0 }, { label: 'Feb', count: 0 },
+  { label: 'Mar', count: 0 }, { label: 'Apr', count: 0 },
+  { label: 'May', count: 0 }, { label: 'Jun', count: 0 },
+  { label: 'Jul', count: 0 }, { label: 'Aug', count: 0 },
+  { label: 'Sep', count: 0 }, { label: 'Oct', count: 0 },
+  { label: 'Nov', count: 21 }, { label: 'Dec', count: 0 },
+];
+
 
 const entries = [
   { time: '08:30', tags: ['Завтрак', 'Молочное'] },
@@ -357,6 +372,14 @@ function App() {
 
     return groups;
   }, []);
+
+  const chartData = period === 'Неделя'
+    ? weekData.map((item) => ({ label: item.day, date: item.date, count: item.count }))
+    : period === 'Месяц'
+      ? monthData.map((item) => ({ label: item.label, date: '', count: item.count }))
+      : yearData.map((item) => ({ label: item.label, date: '', count: item.count }));
+  const chartTotal = chartData.reduce((sum, item) => sum + item.count, 0);
+  const chartTitle = period === 'Неделя' ? 'Эта неделя' : period === 'Месяц' ? 'Ноябрь 2026' : '2026 год';
 
   const formatDate = (date: string) => {
     return new Date(`${date}T12:00:00`).toLocaleDateString('ru-RU', {
@@ -766,22 +789,22 @@ function App() {
                   <div className="section-heading">
                     <div>
                       <p className="muted">Количество записей</p>
-                      <h2>Эта неделя</h2>
+                      <h2>{chartTitle}</h2>
                     </div>
-                    <span className="total">21 запись</span>
+                    <span className="total">{chartTotal} записей</span>
                   </div>
-                  <div className="chart">
-                    {weekData.map((item) => (
-                      <div className="chart-column" key={item.day}>
+                  <div className={`chart ${period === 'Месяц' ? 'month-chart' : period === 'Год' ? 'year-chart' : ''}`}>
+                    {chartData.map((item, index) => (
+                      <div className="chart-column" key={`${period}-${item.label}-${index}`}>
                         <span className="bar-count">{item.count}</span>
                         <div className="bar-area">
                           <div
                             className={`bar ${item.count === 0 ? 'empty' : ''}`}
-                            style={{ height: `${item.count * 16 + 4}px` }}
+                            style={{ height: `${item.count === 0 ? 4 : item.count * (period === 'Год' ? 5 : 16) + 4}px` }}
                           />
                         </div>
-                        <span className="bar-day">{item.day}</span>
-                        <span className="bar-date">{item.date}</span>
+                        <span className="bar-day">{item.label}</span>
+                        {item.date && <span className="bar-date">{item.date}</span>}
                       </div>
                     ))}
                   </div>
