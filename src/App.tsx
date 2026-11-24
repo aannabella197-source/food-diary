@@ -375,6 +375,7 @@ function App() {
       : Array.from({ length: 12 }, (_, index) => ({ label: new Date(today.getFullYear(), index, 1).toLocaleDateString('en-US', { month: 'short' }), date: '', count: journalEntries.filter((entry) => entry.date.startsWith(`${today.getFullYear()}-${String(index + 1).padStart(2, '0')}`)).length }));
   const chartTotal = chartData.reduce((sum, item) => sum + item.count, 0);
   const chartTitle = period === 'Неделя' ? 'Эта неделя' : period === 'Месяц' ? today.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' }) : `${today.getFullYear()} год`;
+  const todayEntries = journalEntries.filter((entry) => entry.date === todayString).sort((a, b) => a.time.localeCompare(b.time));
 
   const formatDate = (date: string) => {
     return new Date(`${date}T12:00:00`).toLocaleDateString('ru-RU', {
@@ -810,19 +811,17 @@ function App() {
                 <section className="timeline">
                   <div className="timeline-heading">
                     <h2>Записи</h2>
-                    <span className="muted">Сегодня · 24 ноября</span>
+                    <span className="muted">Сегодня · {today.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}</span>
                   </div>
-                  {entries.map((entry) => (
-                    <article className="entry" key={entry.time}>
+                  {todayEntries.length > 0 ? todayEntries.map((entry) => (
+                    <article className="entry" key={entry.id}>
                       <span className="entry-time">{entry.time}</span>
                       <div className="entry-tags">
-                        {entry.tags.map((tag) => (
-                          <span className="tag" key={tag}>{tag}</span>
-                        ))}
+                        {[...entry.tags, ...entry.activity].map((tag) => <span className="tag" key={tag}>{tag}</span>)}
                       </div>
                       <span className="entry-arrow">›</span>
                     </article>
-                  ))}
+                  )) : <p className="muted">Сегодня записей пока нет</p>}
                 </section>
               </>
             )}
