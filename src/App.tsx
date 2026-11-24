@@ -620,7 +620,7 @@ function App() {
                 <div className="export-section">
                   <h2>Период</h2>
                   <select className="export-select" value={exportPeriod} onChange={(event) => setExportPeriod(event.target.value)}>
-                    {['Все записи', 'Текущий месяц', 'Последние 30 дней', 'Последние 7 дней', 'Произвольный период'].map((item) => <option key={item}>{item}</option>)}
+                    {['Все записи', 'Текущий месяц', 'Последние 7 дней', 'Произвольный период'].map((item) => <option key={item}>{item}</option>)}
                   </select>
                   {exportPeriod === 'Произвольный период' && (
                     <div className="date-range export-date-range">
