@@ -24,7 +24,7 @@ type JournalEntry = {
   comment: string;
 };
 
-const foodTags = [
+const defaultFoodTags = [
   'Перекус', 'Завтрак', 'Обед', 'Ужин',
   'Десерт', 'Фрукты', 'Овощи', 'Мучное',
   'Без глютена', 'Молочное', 'Мясное', 'Крупы',
@@ -32,7 +32,7 @@ const foodTags = [
   'Безалкогольные напитки', 'Чай', 'Кофе', 'Смузи',
 ];
 
-const activityTags = [
+const defaultActivityTags = [
   'Прогулка', 'Домашние дела', 'Тренировка', 'Отдых', 'Работа',
 ];
 
@@ -129,6 +129,68 @@ function App() {
   const [period, setPeriod] = useState<Period>('Неделя');
   const [tab, setTab] = useState<Tab>('Динамика');
   const [settingsPage, setSettingsPage] = useState<string | null>(null);
+  const [foodTags, setFoodTags] = useState<string[]>(() => JSON.parse(localStorage.getItem('food-diary-food-tags') || 'null') || defaultFoodTags);
+  const [activityTags, setActivityTags] = useState<string[]>(() => JSON.parse(localStorage.getItem('food-diary-activity-tags') || 'null') || defaultActivityTags);
+  const [disabledFoodTags, setDisabledFoodTags] = useState<string[]>(() => JSON.parse(localStorage.getItem('food-diary-disabled-food-tags') || '[]'));
+  const [disabledActivityTags, setDisabledActivityTags] = useState<string[]>(() => JSON.parse(localStorage.getItem('food-diary-disabled-activity-tags') || '[]'));
+  const [tagCategory, setTagCategory] = useState<'food' | 'activity'>('food');
+  const [tagEditorOpen, setTagEditorOpen] = useState(false);
+  const [editingTag, setEditingTag] = useState<string | null>(null);
+  const [tagDraft, setTagDraft] = useState('');
+  const [tagIcon, setTagIcon] = useState('◇');
+  const [tagIcons, setTagIcons] = useState<Record<string, string>>(() => JSON.parse(localStorage.getItem('food-diary-tag-icons') || '{}'));
+  const [deleteTag, setDeleteTag] = useState<string | null>(null);
+
+  useEffect(() => {
+    localStorage.setItem('food-diary-food-tags', JSON.stringify(foodTags));
+    localStorage.setItem('food-diary-activity-tags', JSON.stringify(activityTags));
+    localStorage.setItem('food-diary-disabled-food-tags', JSON.stringify(disabledFoodTags));
+    localStorage.setItem('food-diary-disabled-activity-tags', JSON.stringify(disabledActivityTags));
+    localStorage.setItem('food-diary-tag-icons', JSON.stringify(tagIcons));
+  }, [foodTags, activityTags, disabledFoodTags, disabledActivityTags, tagIcons]);
+
+  const currentTags = tagCategory === 'food' ? foodTags : activityTags;
+  const setCurrentTags = tagCategory === 'food' ? setFoodTags : setActivityTags;
+  const currentDisabled = tagCategory === 'food' ? disabledFoodTags : disabledActivityTags;
+  const setCurrentDisabled = tagCategory === 'food' ? setDisabledFoodTags : setDisabledActivityTags;
+  const saveTag = () => {
+    const name = tagDraft.trim();
+    if (!name) return;
+    if (currentTags.some((tag) => tag.toLowerCase() === name.toLowerCase() && tag !== editingTag)) return;
+    if (!editingTag && currentTags.length >= 30) return;
+    if (editingTag) {
+      setCurrentTags((items) => items.map((tag) => tag === editingTag ? name : tag));
+      setCurrentDisabled((items) => items.map((tag) => tag === editingTag ? name : tag));
+      setTagIcons((items) => {
+        const next = { ...items, [name]: tagIcon };
+        if (editingTag !== name) delete next[editingTag];
+        return next;
+      });
+    } else {
+      setCurrentTags((items) => [...items, name]);
+      setTagIcons((items) => ({ ...items, [name]: tagIcon }));
+    }
+    setTagEditorOpen(false);
+    setEditingTag(null);
+    setTagDraft('');
+  };
+  const moveTag = (tag: string, direction: -1 | 1) => {
+    const index = currentTags.indexOf(tag);
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= currentTags.length) return;
+    setCurrentTags((items) => {
+      const next = [...items];
+      [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+      return next;
+    });
+  };
+  const removeTag = (tag: string) => {
+    setCurrentTags((items) => items.filter((item) => item !== tag));
+    setCurrentDisabled((items) => items.filter((item) => item !== tag));
+    setTagIcons((items) => { const next = { ...items }; delete next[tag]; return next; });
+    setDeleteTag(null);
+  };
+
   const [theme, setTheme] = useState<Theme>(() => {
     const savedTheme = localStorage.getItem('food-diary-theme');
     return savedTheme === 'light' || savedTheme === 'dark' ? savedTheme : 'system';
@@ -481,7 +543,61 @@ function App() {
               </section>
             )}
 
-            {settingsPage && settingsPage !== 'Оформление' && (
+            {settingsPage === 'Управление тегами' && (
+              <section className="settings-page tag-management">
+                <p className="muted">Две категории тегов. До 30 тегов в каждой.</p>
+                <div className="tag-category-switch">
+                  <button className={tagCategory === 'food' ? 'active' : ''} onClick={() => { setTagCategory('food'); setTagEditorOpen(false); setDeleteTag(null); }}>Тип еды</button>
+                  <button className={tagCategory === 'activity' ? 'active' : ''} onClick={() => { setTagCategory('activity'); setTagEditorOpen(false); setDeleteTag(null); }}>Активность</button>
+                </div>
+                <div className="tag-management-heading">
+                  <span>{currentTags.length} из 30 тегов</span>
+                  <button className="tag-add-button" disabled={currentTags.length >= 30} onClick={() => { setEditingTag(null); setTagDraft(''); setTagIcon('◇'); setTagEditorOpen(true); }}>+ Добавить тег</button>
+                </div>
+                {tagEditorOpen && (
+                  <div className="tag-edit-panel">
+                    <label>Название тега
+                      <input value={tagDraft} maxLength={30} onChange={(event) => setTagDraft(event.target.value)} placeholder="Например, Салат" />
+                    </label>
+                    <span className="muted">Выбери значок</span>
+                    <div className="tag-icon-picker">
+                      {['◇', '○', '□', '△', '☆', '☼', '⌂', '♧', '≋', '▤', '◉', '⌁'].map((icon) => (
+                        <button key={icon} className={tagIcon === icon ? 'selected' : ''} onClick={() => setTagIcon(icon)}>{icon}</button>
+                      ))}
+                    </div>
+                    <div className="tag-edit-actions">
+                      <button onClick={() => { setTagEditorOpen(false); setEditingTag(null); }}>Отмена</button>
+                      <button className="primary" disabled={!tagDraft.trim() || (currentTags.some((tag) => tag.toLowerCase() === tagDraft.trim().toLowerCase() && tag !== editingTag))} onClick={saveTag}>Сохранить</button>
+                    </div>
+                  </div>
+                )}
+                <div className="managed-tag-list">
+                  {currentTags.map((tag, index) => (
+                    <div className={currentDisabled.includes(tag) ? 'managed-tag disabled' : 'managed-tag'} key={tag}>
+                      <span className="managed-tag-icon">{tagIcons[tag] || '◇'}</span>
+                      <span className="managed-tag-name">{tag}</span>
+                      {currentDisabled.includes(tag) && <small>Отключён</small>}
+                      <div className="managed-tag-actions">
+                        <button aria-label="Выше" disabled={index === 0} onClick={() => moveTag(tag, -1)}>↑</button>
+                        <button aria-label="Ниже" disabled={index === currentTags.length - 1} onClick={() => moveTag(tag, 1)}>↓</button>
+                        <button aria-label="Изменить" onClick={() => { setEditingTag(tag); setTagDraft(tag); setTagIcon(tagIcons[tag] || '◇'); setTagEditorOpen(true); }}>✎</button>
+                        <button aria-label={currentDisabled.includes(tag) ? 'Включить' : 'Отключить'} onClick={() => setCurrentDisabled((items) => items.includes(tag) ? items.filter((item) => item !== tag) : [...items, tag])}>{currentDisabled.includes(tag) ? '✓' : 'Ⅱ'}</button>
+                        <button aria-label="Удалить" onClick={() => setDeleteTag(tag)}>×</button>
+                      </div>
+                      {deleteTag === tag && (
+                        <div className="tag-delete-confirm">
+                          <span>Удалить тег «{tag}»?</span>
+                          <button onClick={() => setDeleteTag(null)}>Отмена</button>
+                          <button className="danger" onClick={() => removeTag(tag)}>Удалить</button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {settingsPage && settingsPage !== 'Оформление' && settingsPage !== 'Управление тегами' && (
               <section className="settings-page">
                 <p className="muted">Раздел настроек</p>
                 <h2>{settingsPage}</h2>
@@ -613,7 +729,7 @@ function App() {
                     <div className="filter-section">
                       <div className="filter-heading">Тип еды</div>
                       <div className="filter-tags">
-                        {foodTags.map((tag) => (
+                        {foodTags.filter((tag) => !disabledFoodTags.includes(tag)).map((tag) => (
                           <button
                             key={tag}
                             className={filterTags.includes(tag) ? 'filter-tag selected' : 'filter-tag'}
@@ -628,7 +744,7 @@ function App() {
                     <div className="filter-section">
                       <div className="filter-heading">Активность</div>
                       <div className="filter-tags">
-                        {activityTags.map((tag) => (
+                        {activityTags.filter((tag) => !disabledActivityTags.includes(tag)).map((tag) => (
                           <button
                             key={tag}
                             className={filterTags.includes(tag) ? 'filter-tag selected' : 'filter-tag'}
