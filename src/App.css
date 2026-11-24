@@ -989,3 +989,32 @@ body[data-theme="dark"] .about-hero p,body[data-theme="dark"] .about-section p,b
 .about-version{margin:0;padding:3px 5px 0;color:#92998c;font-size:11px;text-align:center}
 body[data-theme="dark"] .about-section-toggle{color:#dce5d2}
 body[data-theme="dark"] .about-section-chevron{color:#b2c69d}
+
+/* Разные масштабы графика */
+.chart.month-chart {
+  justify-content: flex-start;
+  gap: 9px;
+  overflow-x: auto;
+  padding: 18px 2px 4px;
+  scrollbar-width: thin;
+}
+.month-chart .chart-column {
+  flex: 0 0 27px;
+}
+.month-chart .bar-day {
+  font-size: 11px;
+}
+.chart.year-chart {
+  justify-content: space-between;
+  gap: 4px;
+}
+.year-chart .chart-column {
+  min-width: 0;
+  flex: 1 1 0;
+}
+.year-chart .bar {
+  width: min(19px, 85%);
+}
+.year-chart .bar-day {
+  font-size: 10px;
+}
