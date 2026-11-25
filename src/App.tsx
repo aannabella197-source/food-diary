@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import './App.css';
 
 type Period = 'Неделя' | 'Месяц' | 'Год';
@@ -153,6 +153,67 @@ function App() {
     localStorage.setItem('food-diary-disabled-activity-tags', JSON.stringify(disabledActivityTags));
     localStorage.setItem('food-diary-tag-icons', JSON.stringify(tagIcons));
   }, [foodTags, activityTags, disabledFoodTags, disabledActivityTags, tagIcons]);
+
+  const restoreFileInput = useRef<HTMLInputElement>(null);
+
+  const restoreBackup = async (file: File) => {
+    try {
+      const parsed: unknown = JSON.parse(await file.text());
+      if (!parsed || typeof parsed !== 'object') throw new Error('Файл не распознан.');
+      const backup = parsed as { app?: unknown; version?: unknown; data?: Record<string, unknown> };
+      const data = backup.data;
+      if (
+        backup.app !== 'food-diary' ||
+        backup.version !== 1 ||
+        !data ||
+        !Array.isArray(data.journalEntries) ||
+        !data.journalEntries.every((entry) =>
+          entry && typeof entry === 'object' &&
+          typeof (entry as JournalEntry).id === 'number' &&
+          typeof (entry as JournalEntry).date === 'string' &&
+          typeof (entry as JournalEntry).time === 'string' &&
+          typeof (entry as JournalEntry).food === 'string' &&
+          Array.isArray((entry as JournalEntry).tags) &&
+          Array.isArray((entry as JournalEntry).activity)
+        ) ||
+        !Array.isArray(data.foodTags) ||
+        !Array.isArray(data.activityTags) ||
+        !Array.isArray(data.disabledFoodTags) ||
+        !Array.isArray(data.disabledActivityTags) ||
+        !data.tagIcons ||
+        typeof data.tagIcons !== 'object' ||
+        Array.isArray(data.tagIcons) ||
+        !['light', 'dark', 'system'].includes(String(data.theme))
+      ) {
+        throw new Error('Структура файла не подходит для восстановления дневника.');
+      }
+
+      if (!window.confirm('Восстановить данные из выбранной копии? Текущие записи, теги и настройки будут заменены данными из файла.')) return;
+
+      setJournalEntries(data.journalEntries as JournalEntry[]);
+      setFoodTags(data.foodTags as string[]);
+      setActivityTags(data.activityTags as string[]);
+      setDisabledFoodTags(data.disabledFoodTags as string[]);
+      setDisabledActivityTags(data.disabledActivityTags as string[]);
+      setTagIcons(data.tagIcons as Record<string, string>);
+      setTheme(data.theme as Theme);
+      setSelectedEntry(null);
+      setEditingEntryId(null);
+      setEditorOpen(false);
+      setSelectedTags([]);
+      const info = {
+        createdAt: typeof (backup as { createdAt?: unknown }).createdAt === 'string'
+          ? (backup as { createdAt: string }).createdAt
+          : new Date(file.lastModified).toISOString(),
+        size: file.size,
+      };
+      setBackupInfo(info);
+      localStorage.setItem('food-diary-last-backup', JSON.stringify(info));
+      window.alert('Данные успешно восстановлены.');
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Не удалось прочитать файл резервной копии.');
+    }
+  };
 
   const createBackup = () => {
     const createdAt = new Date().toISOString();
@@ -900,9 +961,20 @@ function App() {
                     <div className="backup-action-icon">↻</div>
                     <div className="backup-action-copy">
                       <strong>Восстановить данные</strong>
-                      <p>Загрузить ранее сохранённую копию из OneDrive.</p>
+                      <p>Выбрать сохранённый файл резервной копии с устройства или из OneDrive.</p>
                     </div>
-                    <button className="backup-button secondary" disabled>Восстановить</button>
+                    <button className="backup-button secondary" onClick={() => restoreFileInput.current?.click()}>Выбрать файл</button>
+                    <input
+                      ref={restoreFileInput}
+                      type="file"
+                      accept=".json,application/json"
+                      hidden
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (file) void restoreBackup(file);
+                        event.target.value = '';
+                      }}
+                    />
                   </div>
                 </div>
 
@@ -915,7 +987,7 @@ function App() {
                   </ul>
                 </div>
 
-                <p className="backup-note">После нажатия файл JSON скачается на устройство. Его можно переместить в папку OneDrive. Автоматической синхронизации нет. Восстановление из файла подключим следующим этапом.</p>
+                <p className="backup-note">Файл копии можно сохранить в папке OneDrive и выбрать здесь при восстановлении. Восстановление заменяет текущие записи и настройки. Автоматической синхронизации нет.</p>
               </section>
             )}
 
