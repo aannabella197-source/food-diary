@@ -139,6 +139,10 @@ function App() {
   const [includeTags, setIncludeTags] = useState(true);
   const [includeCarbs, setIncludeCarbs] = useState(true);
   const [includeHunger, setIncludeHunger] = useState(true);
+  const [backupInfo, setBackupInfo] = useState<{ createdAt: string; size: number } | null>(() => {
+    const saved = localStorage.getItem('food-diary-last-backup');
+    return saved ? JSON.parse(saved) as { createdAt: string; size: number } : null;
+  });
 
   useEffect(() => { localStorage.setItem('food-diary-entries', JSON.stringify(journalEntries)); }, [journalEntries]);
 
@@ -149,6 +153,38 @@ function App() {
     localStorage.setItem('food-diary-disabled-activity-tags', JSON.stringify(disabledActivityTags));
     localStorage.setItem('food-diary-tag-icons', JSON.stringify(tagIcons));
   }, [foodTags, activityTags, disabledFoodTags, disabledActivityTags, tagIcons]);
+
+  const createBackup = () => {
+    const createdAt = new Date().toISOString();
+    const backup = {
+      app: 'food-diary',
+      version: 1,
+      createdAt,
+      data: {
+        journalEntries,
+        foodTags,
+        activityTags,
+        disabledFoodTags,
+        disabledActivityTags,
+        tagIcons,
+        theme,
+      },
+    };
+    const content = JSON.stringify(backup, null, 2);
+    const blob = new Blob([content], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const stamp = createdAt.replace(/[:.]/g, '-');
+    link.href = url;
+    link.download = `food-diary-backup-${stamp}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    const info = { createdAt, size: blob.size };
+    setBackupInfo(info);
+    localStorage.setItem('food-diary-last-backup', JSON.stringify(info));
+  };
 
   const currentTags = tagCategory === 'food' ? foodTags : activityTags;
   const setCurrentTags = tagCategory === 'food' ? setFoodTags : setActivityTags;
@@ -843,8 +879,10 @@ function App() {
                 <div className="backup-status-card">
                   <div className="backup-status-icon">☁</div>
                   <div>
-                    <strong>Резервных копий пока нет</strong>
-                    <p>После создания копии здесь появятся дата, время и размер последнего файла.</p>
+                    <strong>{backupInfo ? 'Последняя копия создана' : 'Резервных копий пока нет'}</strong>
+                    <p>{backupInfo
+                      ? `${new Date(backupInfo.createdAt).toLocaleString('ru-RU')} · ${(backupInfo.size / 1024).toFixed(1)} КБ`
+                      : 'После создания копии здесь появятся дата, время и размер файла.'}</p>
                   </div>
                 </div>
 
@@ -853,9 +891,9 @@ function App() {
                     <div className="backup-action-icon">＋</div>
                     <div className="backup-action-copy">
                       <strong>Создать резервную копию</strong>
-                      <p>Сохранить текущие данные дневника в OneDrive.</p>
+                      <p>Скачать файл копии, который можно сохранить в OneDrive.</p>
                     </div>
-                    <button className="backup-button" disabled>Создать копию</button>
+                    <button className="backup-button" onClick={createBackup}>Создать копию</button>
                   </div>
 
                   <div className="backup-action-card">
@@ -877,7 +915,7 @@ function App() {
                   </ul>
                 </div>
 
-                <p className="backup-note">Резервное копирование выполняется вручную. Автоматической синхронизации с OneDrive не будет. Функции создания и восстановления подключим на следующем этапе.</p>
+                <p className="backup-note">После нажатия файл JSON скачается на устройство. Его можно переместить в папку OneDrive. Автоматической синхронизации нет. Восстановление из файла подключим следующим этапом.</p>
               </section>
             )}
 
