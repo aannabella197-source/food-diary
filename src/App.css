@@ -439,6 +439,10 @@ h2 {
 }
 
 .choice-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   padding: 10px 13px;
   border: 1px solid #e4e9dc;
   border-radius: 12px;
