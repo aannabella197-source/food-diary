@@ -1,5 +1,6 @@
 
 import { useEffect, useRef, useState } from 'react';
+import * as XLSX from 'xlsx';
 import './App.css';
 
 type Period = 'Неделя' | 'Месяц' | 'Год';
@@ -270,8 +271,7 @@ function App() {
     })
     .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
 
-  const exportCsv = () => {
-    if (exportEntries.length === 0 || exportFormat !== 'CSV (.csv)') return;
+  const getExportRows = () => {
     const headers = ['Дата', 'Время', 'Еда'];
     if (includeTags) headers.push('Теги еды', 'Активность');
     if (includeCarbs) headers.push('Углеводы (г)', 'Комментарий');
@@ -283,20 +283,39 @@ function App() {
       if (includeHunger) row.push(entry.hunger ?? '', entry.mood || '');
       return row;
     });
+    return [headers, ...rows];
+  };
+
+  const getExportFileDate = () => exportDateKey(new Date());
+
+  const exportCsv = () => {
+    if (exportEntries.length === 0 || exportFormat !== 'CSV (.csv)') return;
     const escapeCell = (value: string | number) => {
       const cell = String(value);
-      return /[;"\r\n]/.test(cell) ? '"' + cell.replace(/"/g, '""') + '"' : cell;
+      return /[;"\\r\\n]/.test(cell) ? '"' + cell.replace(/"/g, '""') + '"' : cell;
     };
-    const csv = [headers, ...rows].map((row) => row.map(escapeCell).join(';')).join('\r\n');
-    const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8;' });
+    const csv = getExportRows().map((row) => row.map(escapeCell).join(';')).join('\\r\\n');
+    const blob = new Blob(['\\uFEFF', csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'food-diary-export-' + new Date().toISOString().slice(0, 10) + '.csv';
+    link.download = 'food-diary-export-' + getExportFileDate() + '.csv';
     document.body.appendChild(link);
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
+  };
+
+  const exportExcel = () => {
+    if (exportEntries.length === 0 || exportFormat !== 'Excel (.xlsx)') return;
+    const rows = getExportRows();
+    const worksheet = XLSX.utils.aoa_to_sheet(rows);
+    worksheet['!cols'] = rows[0].map((header) => ({
+      wch: Math.max(14, Math.min(36, String(header).length + 4)),
+    }));
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Дневник питания');
+    XLSX.writeFile(workbook, 'food-diary-export-' + getExportFileDate() + '.xlsx');
   };
   const currentTags = tagCategory === 'food' ? foodTags : activityTags;
   const setCurrentTags = tagCategory === 'food' ? setFoodTags : setActivityTags;
@@ -900,9 +919,9 @@ function App() {
                   <h2>Формат файла</h2>
                   <div className="export-choice-row">
                     {(['Excel (.xlsx)', 'CSV (.csv)'] as const).map((format) => (
-                      <button key={format} disabled={format === 'Excel (.xlsx)'} className={exportFormat === format ? 'export-choice active' : 'export-choice'} onClick={() => setExportFormat(format)}>
+                      <button key={format} className={exportFormat === format ? 'export-choice active' : 'export-choice'} onClick={() => setExportFormat(format)}>
                         <span className="export-radio">{exportFormat === format ? '✓' : ''}</span>
-                        {format}{format === 'Excel (.xlsx)' ? ' — позже' : ''}
+                        {format}
                       </button>
                     ))}
                   </div>
@@ -936,7 +955,7 @@ function App() {
                   <div><span>Записей для экспорта</span><strong>{exportEntries.length}</strong></div>
                   <p>В файл попадут записи за выбранный период и только отмеченные дополнительные поля.</p>
                 </div>
-                <button className="export-button" onClick={exportCsv} disabled={exportEntries.length === 0 || exportFormat !== 'CSV (.csv)'}>Экспортировать CSV-файл</button>
+                <button className="export-button" onClick={exportFormat === 'CSV (.csv)' ? exportCsv : exportExcel} disabled={exportEntries.length === 0}>Экспортировать {exportFormat === 'CSV (.csv)' ? 'CSV' : 'Excel'}-файл</button>
                 <p className="export-note">{exportEntries.length === 0 ? 'За выбранный период записей нет.' : 'Файл CSV сохранится на устройство. Его можно открыть в Excel или Google Таблицах.'}</p>
               </section>
             )}
