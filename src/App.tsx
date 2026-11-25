@@ -14,6 +14,11 @@ type JournalPeriod =
   | 'Последние 30 дней'
   | 'Произвольный период';
 
+function TagGlyph({ name, size = 16 }: { name: string; size?: number }) {
+  const Icon = tagIconOptions.find((option) => option.value === name)?.Icon || Tag;
+  return <Icon size={size} strokeWidth={1.8} aria-hidden="true" />;
+}
+
 type JournalEntry = {
   id: number;
   date: string;
@@ -620,7 +625,7 @@ function App() {
               {selectedEntry.tags.length > 0 && (
                 <div className="entry-detail-row">
                   <h2>Тип еды</h2>
-                  <div className="journal-entry-tags">{selectedEntry.tags.map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div>
+                  <div className="journal-entry-tags">{selectedEntry.tags.map((tag) => <span className="tag" key={tag}><TagGlyph name={tagIcons[tag] || 'tag'} size={13} />{tag}</span>)}</div>
                 </div>
               )}
               {selectedEntry.carbs !== null && (
@@ -632,7 +637,7 @@ function App() {
               {selectedEntry.activity.length > 0 && (
                 <div className="entry-detail-row">
                   <h2>Активность</h2>
-                  <div className="journal-entry-tags">{selectedEntry.activity.map((tag) => <span className="tag activity-tag" key={tag}>{tag}</span>)}</div>
+                  <div className="journal-entry-tags">{selectedEntry.activity.map((tag) => <span className="tag activity-tag" key={tag}><TagGlyph name={tagIcons[tag] || 'tag'} size={13} />{tag}</span>)}</div>
                 </div>
               )}
               {selectedEntry.hunger !== undefined && (
