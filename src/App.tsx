@@ -211,6 +211,8 @@ function App() {
   }, [theme]);
   const [editorOpen, setEditorOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
+  const [editingEntryId, setEditingEntryId] = useState<number | null>(null);
+  const [confirmDeleteEntry, setConfirmDeleteEntry] = useState(false);
   const [showAllFields, setShowAllFields] = useState(false);
   const [showAllFoodTags, setShowAllFoodTags] = useState(false);
   const [showAllActivityTags, setShowAllActivityTags] = useState(false);
@@ -264,16 +266,56 @@ function App() {
     setEditorOpen(true);
   };
 
+  const startEditingEntry = (entry: JournalEntry) => {
+    setEditingEntryId(entry.id);
+    setEntryDate(entry.date);
+    setEntryTime(entry.time);
+    setEntryFood(entry.food);
+    setEntryCarbs(entry.carbs === null ? '' : String(entry.carbs));
+    setSelectedTags([...entry.tags, ...entry.activity]);
+    setShowAllFields(false);
+    setShowAllFoodTags(true);
+    setShowAllActivityTags(true);
+    setHunger(3);
+    setMood('');
+    setConfirmDeleteEntry(false);
+    setSelectedEntry(null);
+    setEditorOpen(true);
+  };
+
+  const cancelEntryEditor = () => {
+    setEditorOpen(false);
+    if (editingEntryId !== null) {
+      const original = journalEntries.find((entry) => entry.id === editingEntryId) || null;
+      setSelectedEntry(original);
+    }
+    setEditingEntryId(null);
+  };
+
   const saveEntry = () => {
     if (!entryFood.trim()) return;
     const nextEntry: JournalEntry = {
-      id: Date.now(), date: entryDate, time: entryTime, food: entryFood.trim(),
+      id: editingEntryId ?? Date.now(), date: entryDate, time: entryTime, food: entryFood.trim(),
       tags: selectedTags.filter((tag) => foodTags.includes(tag)),
       activity: selectedTags.filter((tag) => activityTags.includes(tag)),
-      carbs: entryCarbs.trim() ? Number(entryCarbs) : null, comment: '',
+      carbs: entryCarbs.trim() ? Number(entryCarbs) : null,
+      comment: editingEntryId === null ? '' : journalEntries.find((entry) => entry.id === editingEntryId)?.comment || '',
     };
-    setJournalEntries((current) => [...current, nextEntry]);
+    if (editingEntryId !== null) {
+      setJournalEntries((current) => current.map((entry) => entry.id === editingEntryId ? nextEntry : entry));
+      setSelectedEntry(nextEntry);
+    } else {
+      setJournalEntries((current) => [...current, nextEntry]);
+    }
+    setEditingEntryId(null);
     setEditorOpen(false);
+  };
+
+  const deleteSelectedEntry = () => {
+    if (!selectedEntry) return;
+    setJournalEntries((current) => current.filter((entry) => entry.id !== selectedEntry.id));
+    setSelectedEntry(null);
+    setConfirmDeleteEntry(false);
   };
 
   const today = new Date();
@@ -425,13 +467,27 @@ function App() {
                 </div>
               )}
             </section>
+            <div className="entry-actions">
+              <button className="save-button" onClick={() => startEditingEntry(selectedEntry)}>Изменить запись</button>
+              {!confirmDeleteEntry ? (
+                <button className="delete-entry-button" onClick={() => setConfirmDeleteEntry(true)}>Удалить запись</button>
+              ) : (
+                <div className="delete-entry-confirm">
+                  <p>Удалить эту запись? Это действие нельзя отменить.</p>
+                  <div>
+                    <button className="delete-entry-button" onClick={deleteSelectedEntry}>Удалить</button>
+                    <button className="cancel-delete-button" onClick={() => setConfirmDeleteEntry(false)}>Отмена</button>
+                  </div>
+                </div>
+              )}
+            </div>
           </main>
         </>
       ) : editorOpen ? (
         <>
           <header className="editor-header">
-            <button className="back-button" onClick={() => setEditorOpen(false)}><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5M5 12l7-7M5 12l7 7" /></svg></button>
-            <h1>Новая запись</h1>
+            <button className="back-button" onClick={cancelEntryEditor} aria-label="Назад"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5M5 12l7-7M5 12l7 7" /></svg></button>
+            <h1>{editingEntryId !== null ? 'Изменить запись' : 'Новая запись'}</h1>
           </header>
 
           <main className="editor-main">
@@ -565,7 +621,7 @@ function App() {
             )}
 
             <button className="save-button" onClick={saveEntry} disabled={!entryFood.trim()}>
-              Сохранить запись
+              {editingEntryId !== null ? 'Сохранить изменения' : 'Сохранить запись'}
             </button>
           </main>
         </>
