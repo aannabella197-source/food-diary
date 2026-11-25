@@ -1239,3 +1239,17 @@ body[data-theme="dark"] .tag-management-hint { color: #a5af9b; }
   user-select: none;
 }
 .managed-tag-drag-handle:active { cursor: grabbing; }
+
+
+/* Подсветка позиции при перетаскивании */
+.managed-tag.drag-over {
+  border: 2px solid #82976c;
+  background: #eef3e7;
+  box-shadow: 0 0 0 3px #82976c24;
+  transform: scale(1.01);
+}
+body[data-theme="dark"] .managed-tag.drag-over {
+  border-color: #b0c995;
+  background: #3b4933;
+  box-shadow: 0 0 0 3px #b0c99530;
+}
