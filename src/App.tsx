@@ -574,6 +574,65 @@ function App() {
     setConfirmDeleteEntry(false);
   };
 
+  const fallbackBack = () => {
+    if (moreMenuOpen) {
+      setMoreMenuOpen(false);
+    } else if (selectedEntry) {
+      setSelectedEntry(null);
+      setConfirmDeleteEntry(false);
+    } else if (editorOpen) {
+      cancelEntryEditor();
+    } else if (settingsPage) {
+      setSettingsPage(null);
+    } else if (tab === 'Ещё') {
+      setTab('Дневник');
+    }
+  };
+
+  const currentScreenKey = moreMenuOpen
+    ? 'menu'
+    : selectedEntry
+      ? `entry-${selectedEntry.id}`
+      : editorOpen
+        ? `editor-${editingEntryId ?? 'new'}`
+        : settingsPage
+          ? `settings-${settingsPage}`
+          : `tab-${tab}`;
+  const previousScreenKey = useRef(currentScreenKey);
+  const skipHistoryPush = useRef(false);
+
+  const handleInAppBack = () => {
+    if (window.history.state?.foodDiaryApp) {
+      window.history.back();
+    } else {
+      fallbackBack();
+    }
+  };
+
+  useEffect(() => {
+    if (!window.history.state?.foodDiaryApp) {
+      window.history.replaceState({ foodDiaryApp: true, screen: currentScreenKey }, '');
+    }
+
+    const handlePopState = () => {
+      skipHistoryPush.current = true;
+      fallbackBack();
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [currentScreenKey, moreMenuOpen, selectedEntry, editorOpen, settingsPage, tab]);
+
+  useEffect(() => {
+    if (previousScreenKey.current !== currentScreenKey) {
+      previousScreenKey.current = currentScreenKey;
+      if (skipHistoryPush.current) {
+        skipHistoryPush.current = false;
+        return;
+      }
+      window.history.pushState({ foodDiaryApp: true, screen: currentScreenKey }, '');
+    }
+  }, [currentScreenKey]);
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -688,7 +747,7 @@ function App() {
       {selectedEntry ? (
         <>
           <header className="editor-header">
-            <button className="back-button" onClick={() => { setSelectedEntry(null); setConfirmDeleteEntry(false); }} aria-label="Назад"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5M5 12l7-7M5 12l7 7" /></svg></button>
+            <button className="back-button" onClick={handleInAppBack} aria-label="Назад"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5M5 12l7-7M5 12l7 7" /></svg></button>
             <h1>Запись</h1>
           </header>
           <main className="editor-main">
@@ -754,7 +813,7 @@ function App() {
       ) : editorOpen ? (
         <>
           <header className="editor-header">
-            <button className="back-button" onClick={cancelEntryEditor} aria-label="Назад"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5M5 12l7-7M5 12l7 7" /></svg></button>
+            <button className="back-button" onClick={handleInAppBack} aria-label="Назад"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5M5 12l7-7M5 12l7 7" /></svg></button>
             <h1>{editingEntryId !== null ? 'Изменить запись' : 'Новая запись'}</h1>
           </header>
 
@@ -907,7 +966,7 @@ function App() {
             <div>
               <div className={settingsPage ? "settings-title-row" : ""}>
                 {settingsPage && (
-                  <button className="back-button settings-back" onClick={() => setSettingsPage(null)} aria-label="Назад"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5M5 12l7-7M5 12l7 7" /></svg></button>
+                  <button className="back-button settings-back" onClick={handleInAppBack} aria-label="Назад"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5M5 12l7-7M5 12l7 7" /></svg></button>
                 )}
                 <h1>{settingsPage || (tab === 'Дневник' ? 'Дневник питания' : tab)}</h1>
               </div>
