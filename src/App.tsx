@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import './App.css';
 
-type Period = 'Неделя' | 'Месяц' | 'Год';
+type Period = 'Месяц' | 'Год';
 type Tab = 'Дневник' | 'Ещё';
 type Theme = 'light' | 'dark' | 'system';
 type JournalPeriod =
@@ -177,7 +177,11 @@ const journalPeriods: JournalPeriod[] = [
 ];
 
 function App() {
-  const [period, setPeriod] = useState<Period>('Неделя');
+  const [period, setPeriod] = useState<Period>('Месяц');
+  const [analyticsPeriod, setAnalyticsPeriod] = useState<'Месяц' | 'Произвольный период'>('Месяц');
+  const [analyticsFrom, setAnalyticsFrom] = useState(() => { const d = new Date(); d.setDate(1); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`; });
+  const [analyticsTo, setAnalyticsTo] = useState(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; });
+  const chartScrollRef = useRef<HTMLDivElement>(null);
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>(() => { const saved = localStorage.getItem('food-diary-entries'); return saved ? JSON.parse(saved) as JournalEntry[] : demoJournalEntries; });
   const [entryDate, setEntryDate] = useState(() => { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; });
   const [entryTime, setEntryTime] = useState(() => new Date().toTimeString().slice(0, 5));
@@ -724,15 +728,65 @@ function App() {
 
   const toDateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   const countForDate = (dateKey: string) => journalEntries.filter((entry) => entry.date === dateKey).length;
-  const weekStart = new Date(today);
-  weekStart.setDate(today.getDate() - ((today.getDay() + 6) % 7));
-  const chartData = period === 'Неделя'
-    ? Array.from({ length: 7 }, (_, index) => { const date = new Date(weekStart); date.setDate(weekStart.getDate() + index); return { label: date.toLocaleDateString('ru-RU', { weekday: 'short' }).replace('.', ''), date: String(date.getDate()), count: countForDate(toDateKey(date)) }; })
-    : period === 'Месяц'
-      ? Array.from({ length: new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate() }, (_, index) => { const date = new Date(today.getFullYear(), today.getMonth(), index + 1); return { label: String(index + 1), date: '', count: countForDate(toDateKey(date)) }; })
-      : Array.from({ length: 12 }, (_, index) => ({ label: new Date(today.getFullYear(), index, 1).toLocaleDateString('en-US', { month: 'short' }), date: '', count: journalEntries.filter((entry) => entry.date.startsWith(`${today.getFullYear()}-${String(index + 1).padStart(2, '0')}`)).length }));
+  const chartData = period === 'Месяц'
+    ? Array.from({ length: new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate() }, (_, index) => {
+        const date = new Date(today.getFullYear(), today.getMonth(), index + 1);
+        return { label: String(index + 1), date: date.toLocaleDateString('ru-RU', { weekday: 'short' }).replace('.', ''), count: countForDate(toDateKey(date)) };
+      })
+    : Array.from({ length: 12 }, (_, index) => ({ label: new Date(today.getFullYear(), index, 1).toLocaleDateString('ru-RU', { month: 'short' }).replace('.', ''), date: '', count: journalEntries.filter((entry) => entry.date.startsWith(`${today.getFullYear()}-${String(index + 1).padStart(2, '0')}`)).length }));
   const chartTotal = chartData.reduce((sum, item) => sum + item.count, 0);
-  const chartTitle = period === 'Неделя' ? 'Эта неделя' : period === 'Месяц' ? today.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' }) : `${today.getFullYear()} год`;
+  const chartTitle = period === 'Месяц' ? today.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' }) : `${today.getFullYear()} год`;
+
+  useEffect(() => {
+    if (period === 'Месяц' && chartScrollRef.current) {
+      const dayWidth = 36;
+      chartScrollRef.current.scrollLeft = Math.max(0, (today.getDate() - 1) * dayWidth);
+    }
+  }, [period]);
+
+  const analyticsStart = analyticsPeriod === 'Месяц'
+    ? new Date(today.getFullYear(), today.getMonth(), 1)
+    : new Date(`${analyticsFrom}T00:00:00`);
+  const analyticsEnd = analyticsPeriod === 'Месяц'
+    ? new Date(today.getFullYear(), today.getMonth(), today.getDate())
+    : new Date(`${analyticsTo}T00:00:00`);
+  const analyticsStartKey = toDateKey(analyticsStart);
+  const analyticsEndKey = toDateKey(analyticsEnd);
+  const analyticsDays = Math.max(1, Math.floor((analyticsEnd.getTime() - analyticsStart.getTime()) / 86400000) + 1);
+  const analyticsEntries = journalEntries.filter((entry) => entry.date >= analyticsStartKey && entry.date <= analyticsEndKey);
+  const loggedDays = new Set(analyticsEntries.map((entry) => entry.date));
+  const averageEntries = loggedDays.size ? analyticsEntries.length / loggedDays.size : 0;
+  const firstMeals = Array.from(analyticsEntries.reduce((map, entry) => {
+    if (!map.has(entry.date) || entry.time < map.get(entry.date)!) map.set(entry.date, entry.time);
+    return map;
+  }, new Map<string, string>()).values());
+  const averageFirstMeal = firstMeals.length
+    ? Math.round(firstMeals.reduce((sum, time) => sum + Number(time.slice(0, 2)) * 60 + Number(time.slice(3, 5)), 0) / firstMeals.length)
+    : null;
+  const averageFirstMealLabel = averageFirstMeal === null ? '—' : `${String(Math.floor(averageFirstMeal / 60)).padStart(2, '0')}:${String(averageFirstMeal % 60).padStart(2, '0')}`;
+  const dayParts = [
+    { label: 'Утро', test: (time: string) => time >= '05:00' && time < '11:00' },
+    { label: 'День', test: (time: string) => time >= '11:00' && time < '17:00' },
+    { label: 'Вечер', test: (time: string) => time >= '17:00' && time < '22:00' },
+    { label: 'Ночь', test: (time: string) => time < '05:00' || time >= '22:00' },
+  ].map((part) => ({ ...part, count: analyticsEntries.filter((entry) => part.test(entry.time)).length }));
+  const categoryCounts = foodTags.filter((tag) => !disabledFoodTags.includes(tag)).map((tag) => ({
+    tag, count: analyticsEntries.filter((entry) => entry.tags.includes(tag)).length,
+  })).filter((item) => item.count > 0).sort((a, b) => b.count - a.count).slice(0, 8);
+  const previousStart = new Date(analyticsStart);
+  previousStart.setDate(previousStart.getDate() - analyticsDays);
+  const previousEnd = new Date(analyticsStart);
+  previousEnd.setDate(previousEnd.getDate() - 1);
+  const previousEntries = journalEntries.filter((entry) => entry.date >= toDateKey(previousStart) && entry.date <= toDateKey(previousEnd));
+  const previousLoggedDays = new Set(previousEntries.map((entry) => entry.date));
+  const entryChange = analyticsEntries.length - previousEntries.length;
+  const formatChange = (value: number) => value > 0 ? `+${value}` : String(value);
+  const strongestPart = [...dayParts].sort((a, b) => b.count - a.count)[0];
+  const analyticsObservations = [
+    analyticsEntries.length ? `Больше всего записей приходится на время «${strongestPart.label.toLowerCase()}».` : 'Пока недостаточно записей для наблюдений.',
+    loggedDays.size ? `В дневнике есть записи за ${loggedDays.size} из ${analyticsDays} дней выбранного периода.` : 'В выбранном периоде пока нет записей.',
+    `По сравнению с предыдущим равным периодом количество записей изменилось на ${formatChange(entryChange)}.`,
+  ];
 
   const formatDate = (date: string) => {
     return new Date(`${date}T12:00:00`).toLocaleDateString('ru-RU', {
@@ -981,7 +1035,7 @@ function App() {
               </button>
               {moreMenuOpen && (
                 <div className="more-menu">
-                  {['Управление тегами', 'Резервное копирование', 'Экспорт данных', 'Оформление', 'О приложении'].map((item) => (
+                  {['Аналитика', 'Управление тегами', 'Резервное копирование', 'Экспорт данных', 'Оформление', 'О приложении'].map((item) => (
                     <button type="button" key={item} onClick={() => {
                       setSettingsPage(item);
                       setTab('Дневник');
@@ -994,6 +1048,77 @@ function App() {
           </header>
 
           <main>
+            {settingsPage === 'Аналитика' && (
+              <section className="settings-page analytics-page">
+                <div className="analytics-period">
+                  <div className="period-options">
+                    {(['Месяц', 'Произвольный период'] as const).map((item) => (
+                      <button key={item} className={analyticsPeriod === item ? 'filter-option active' : 'filter-option'} onClick={() => setAnalyticsPeriod(item)}>{item}</button>
+                    ))}
+                  </div>
+                  {analyticsPeriod === 'Произвольный период' && (
+                    <div className="date-range">
+                      <label>С даты<input type="date" value={analyticsFrom} onChange={(event) => setAnalyticsFrom(event.target.value)} /></label>
+                      <label>По дату<input type="date" value={analyticsTo} onChange={(event) => setAnalyticsTo(event.target.value)} /></label>
+                    </div>
+                  )}
+                  <p className="muted analytics-range-caption">{analyticsStart.toLocaleDateString('ru-RU')} — {analyticsEnd.toLocaleDateString('ru-RU')}</p>
+                </div>
+
+                <section className="analytics-section">
+                  <h2>Общая картина</h2>
+                  <div className="analytics-metrics">
+                    <div><span>Приёмов пищи в день с записями</span><strong>{averageEntries ? averageEntries.toFixed(1).replace('.', ',') : '—'}</strong></div>
+                    <div><span>Первый приём пищи в среднем</span><strong>{averageFirstMealLabel}</strong></div>
+                    <div><span>Дней с записями</span><strong>{loggedDays.size} / {analyticsDays}</strong></div>
+                    <div><span>Всего приёмов пищи</span><strong>{analyticsEntries.length}</strong></div>
+                  </div>
+                </section>
+
+                <section className="analytics-section">
+                  <h2>Распределение по времени суток</h2>
+                  <div className="analytics-bars">
+                    {dayParts.map((part) => (
+                      <div className="analytics-bar-row" key={part.label}>
+                        <span>{part.label}</span>
+                        <div className="analytics-bar-track"><i style={{ width: `${analyticsEntries.length ? part.count / analyticsEntries.length * 100 : 0}%` }} /></div>
+                        <strong>{part.count}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="analytics-section">
+                  <h2>Категории еды</h2>
+                  {categoryCounts.length ? (
+                    <div className="analytics-categories">
+                      {categoryCounts.map((item) => (
+                        <div className="analytics-category" key={item.tag}>
+                          <span><TagGlyph name={tagIcons[item.tag] || defaultTagIcon(item.tag)} size={15} />{item.tag}</span>
+                          <strong>{item.count}</strong>
+                        </div>
+                      ))}
+                    </div>
+                  ) : <p className="muted analytics-empty">За этот период нет записей с тегами еды.</p>}
+                  <p className="analytics-footnote">Частота считается по выбранным тегам. В одной записи может быть несколько категорий.</p>
+                </section>
+
+                <section className="analytics-section">
+                  <h2>Изменения привычек</h2>
+                  <div className="analytics-comparison">
+                    <span>Записей в предыдущем равном периоде</span><strong>{previousEntries.length}</strong>
+                    <span>Изменение количества записей</span><strong>{formatChange(entryChange)}</strong>
+                    <span>Дней с записями в предыдущем периоде</span><strong>{previousLoggedDays.size}</strong>
+                  </div>
+                  <div className="analytics-observations">
+                    <h3>Наблюдения</h3>
+                    {analyticsObservations.map((observation, index) => <p key={index}>{observation}</p>)}
+                  </div>
+                </section>
+                <p className="analytics-disclaimer">Аналитика описывает только внесённые записи. День без записей не означает, что в этот день не было еды.</p>
+              </section>
+            )}
+
             {settingsPage === 'Оформление' && (
               <section className="settings-page">
                 <p className="muted">Выбери, как будет выглядеть дневник</p>
@@ -1276,7 +1401,7 @@ function App() {
               </section>
             )}
 
-            {settingsPage && settingsPage !== 'Оформление' && settingsPage !== 'Управление тегами' && settingsPage !== 'Экспорт данных' && settingsPage !== 'Резервное копирование' && settingsPage !== 'О приложении' && (
+            {settingsPage && settingsPage !== 'Аналитика' && settingsPage !== 'Оформление' && settingsPage !== 'Управление тегами' && settingsPage !== 'Экспорт данных' && settingsPage !== 'Резервное копирование' && settingsPage !== 'О приложении' && (
               <section className="settings-page">
                 <p className="muted">Раздел настроек</p>
                 <h2>{settingsPage}</h2>
@@ -1287,7 +1412,7 @@ function App() {
             {!settingsPage && tab === 'Дневник' && (
               <>
                 <section className="period-switch">
-                  {(['Неделя', 'Месяц', 'Год'] as Period[]).map((item) => (
+                  {(['Месяц', 'Год'] as Period[]).map((item) => (
                     <button
                       key={item}
                       className={period === item ? 'period active' : 'period'}
@@ -1306,7 +1431,7 @@ function App() {
                     </div>
                     <span className="total">{chartTotal} записей</span>
                   </div>
-                  <div className={`chart ${period === 'Неделя' ? 'week-chart' : period === 'Месяц' ? 'month-chart' : period === 'Год' ? 'year-chart' : ''}`}>
+                  <div ref={chartScrollRef} className={`chart ${period === 'Месяц' ? 'month-chart' : 'year-chart'}`}>
                     {chartData.map((item, index) => (
                       <div className="chart-column" key={`${period}-${item.label}-${index}`}>
                         <span className="bar-count">{item.count}</span>
@@ -1317,7 +1442,7 @@ function App() {
                           />
                         </div>
                         <span className="bar-day">{item.label}</span>
-                        {item.date && <span className="bar-date">{item.date}</span>}
+                        {period === 'Месяц' && <span className="bar-date">{item.date}</span>}
                       </div>
                     ))}
                   </div>
