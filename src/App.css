@@ -1038,3 +1038,35 @@ body[data-theme="dark"] .about-section-chevron{color:#b2c69d}
 .year-chart .bar-day {
   font-size: 10px;
 }
+
+
+/* Journal entries open their full details when selected. */
+.journal-entry,
+.timeline .entry {
+  cursor: pointer;
+}
+.journal-entry:focus-visible,
+.timeline .entry:focus-visible {
+  outline: 2px solid #82976c;
+  outline-offset: 3px;
+}
+.entry-detail-card h2 {
+  margin: 20px 0 8px;
+  color: #526447;
+  font-size: 14px;
+}
+.entry-detail-card h2:first-of-type {
+  margin-top: 18px;
+}
+.entry-detail-card p {
+  margin: 0;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.entry-detail-card .muted {
+  color: #858e7c;
+  font-size: 13px;
+}
+.entry-detail-card .journal-entry-tags {
+  margin-top: 6px;
+}
