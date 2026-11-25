@@ -1224,3 +1224,18 @@ body[data-theme="dark"] .managed-tag.dragging {
   border-color: #a6bd8c;
 }
 body[data-theme="dark"] .tag-management-hint { color: #a5af9b; }
+
+
+/* Перетаскивание тегов на сенсорных экранах */
+.managed-tag-drag-handle {
+  display: grid;
+  place-items: center;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 34px;
+  color: #9aa58e;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.managed-tag-drag-handle:active { cursor: grabbing; }
