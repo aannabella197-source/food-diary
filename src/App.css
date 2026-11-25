@@ -1064,6 +1064,41 @@ body[data-theme="dark"] .about-section-chevron{color:#b2c69d}
 .timeline .entry {
   cursor: pointer;
 }
+
+.journal-results-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.delete-all-entries-button {
+  flex: 0 0 auto;
+  padding: 8px 11px;
+  border: 1px solid #e5c9c3;
+  border-radius: 10px;
+  background: #fff9f7;
+  color: #a65345;
+  font-size: 12px;
+}
+
+.delete-all-entries-button:disabled { opacity: .4; cursor: not-allowed; }
+
+.backup-location-help {
+  padding: 15px 16px;
+  border: 1px solid #e4e9dc;
+  border-radius: 14px;
+  background: #f7f9f3;
+  color: #68745f;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.backup-location-help strong { color: #526348; font-size: 13px; }
+.backup-location-help p { margin: 7px 0 0; }
+.backup-location-help b { overflow-wrap: anywhere; }
+body[data-theme="dark"] .backup-location-help { border-color: #414a3b; background: #343c30; color: #b2bea7; }
+body[data-theme="dark"] .backup-location-help strong { color: #dce5d2; }
+body[data-theme="dark"] .delete-all-entries-button { border-color: #76514a; background: #382c29; color: #efb7aa; }
 .journal-entry:focus-visible,
 .timeline .entry:focus-visible {
   outline: 2px solid #82976c;
