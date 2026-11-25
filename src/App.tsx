@@ -247,19 +247,20 @@ function App() {
     localStorage.setItem('food-diary-last-backup', JSON.stringify(info));
   };
 
+  const exportDateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   const exportEntries = journalEntries
     .filter((entry) => {
       if (exportPeriod === 'Текущий месяц') {
         const now = new Date();
         const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-        return entry.date >= monthStart && entry.date <= toDateKey(new Date());
+        return entry.date >= monthStart && entry.date <= exportDateKey(new Date());
       }
       if (exportPeriod === 'Последние 7 дней') {
         const end = new Date();
         end.setHours(0, 0, 0, 0);
         const start = new Date(end);
         start.setDate(start.getDate() - 6);
-        return entry.date >= toDateKey(start) && entry.date <= toDateKey(end);
+        return entry.date >= exportDateKey(start) && entry.date <= exportDateKey(end);
       }
       if (exportPeriod === 'Произвольный период') {
         if (exportFrom && entry.date < exportFrom) return false;
