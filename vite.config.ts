@@ -1,7 +1,8 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
-// https://vite.dev/config/
+// GitHub Pages serves this project from /food-diary/.
 export default defineConfig({
+  base: '/food-diary/',
   plugins: [react()],
 })
