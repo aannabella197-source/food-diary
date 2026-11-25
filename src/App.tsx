@@ -179,6 +179,7 @@ const journalPeriods: JournalPeriod[] = [
 function App() {
   const [period, setPeriod] = useState<Period>('Месяц');
   const [analyticsPeriod, setAnalyticsPeriod] = useState<'Месяц' | 'Произвольный период'>('Месяц');
+  const [showAllAnalyticsCategories, setShowAllAnalyticsCategories] = useState(false);
   const [analyticsFrom, setAnalyticsFrom] = useState(() => { const d = new Date(); d.setDate(1); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`; });
   const [analyticsTo, setAnalyticsTo] = useState(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; });
   const chartScrollRef = useRef<HTMLDivElement>(null);
@@ -772,7 +773,8 @@ function App() {
   ].map((part) => ({ ...part, count: analyticsEntries.filter((entry) => part.test(entry.time)).length }));
   const categoryCounts = foodTags.filter((tag) => !disabledFoodTags.includes(tag)).map((tag) => ({
     tag, count: analyticsEntries.filter((entry) => entry.tags.includes(tag)).length,
-  })).filter((item) => item.count > 0).sort((a, b) => b.count - a.count).slice(0, 8);
+  })).filter((item) => item.count > 0).sort((a, b) => b.count - a.count);
+  const visibleCategoryCounts = showAllAnalyticsCategories ? categoryCounts : categoryCounts.slice(0, 3);
   const previousStart = new Date(analyticsStart);
   previousStart.setDate(previousStart.getDate() - analyticsDays);
   const previousEnd = new Date(analyticsStart);
@@ -1092,7 +1094,7 @@ function App() {
                   <h2>Категории еды</h2>
                   {categoryCounts.length ? (
                     <div className="analytics-categories">
-                      {categoryCounts.map((item) => (
+                      {visibleCategoryCounts.map((item) => (
                         <div className="analytics-category" key={item.tag}>
                           <span><TagGlyph name={tagIcons[item.tag] || defaultTagIcon(item.tag)} size={15} />{item.tag}</span>
                           <strong>{item.count}</strong>
@@ -1100,6 +1102,11 @@ function App() {
                       ))}
                     </div>
                   ) : <p className="muted analytics-empty">За этот период нет записей с тегами еды.</p>}
+                  {categoryCounts.length > 3 && (
+                    <button type="button" className="analytics-show-all" onClick={() => setShowAllAnalyticsCategories((shown) => !shown)}>
+                      {showAllAnalyticsCategories ? 'Свернуть' : 'Показать все'}
+                    </button>
+                  )}
                   <p className="analytics-footnote">Частота считается по выбранным тегам. В одной записи может быть несколько категорий.</p>
                 </section>
 
