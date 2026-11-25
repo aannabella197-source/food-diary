@@ -745,8 +745,10 @@ h2 {
   align-items: start;
   gap: 10px;
   min-height: 58px;
-  padding: 11px 4px;
-  border-bottom: 1px solid #e8ebdf;
+  margin-bottom: 8px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: white;
 }
 
 .journal-time {
@@ -860,7 +862,7 @@ body[data-theme="dark"] .muted, body[data-theme="dark"] .eyebrow { color:#a0aa96
 body[data-theme="dark"] .profile-mark, body[data-theme="dark"] .settings-back { background: transparent; }
 body[data-theme="dark"] .back-button { background: transparent; }
 body[data-theme="dark"] .back-button, body[data-theme="dark"] .period-switch, body[data-theme="dark"] .filter-toggle { background:#343c30; color:#d4dfc9; }
-body[data-theme="dark"] .chart-card, body[data-theme="dark"] .editor-card, body[data-theme="dark"] .filter-panel, body[data-theme="dark"] .journal-empty, body[data-theme="dark"] .settings-placeholder { background:#292f27; color:#e2e7dc; }
+body[data-theme="dark"] .chart-card, body[data-theme="dark"] .editor-card, body[data-theme="dark"] .filter-panel, body[data-theme="dark"] .journal-entry, body[data-theme="dark"] .journal-empty, body[data-theme="dark"] .settings-placeholder { background:#292f27; color:#e2e7dc; }
 body[data-theme="dark"] .entry, body[data-theme="dark"] .journal-entry, body[data-theme="dark"] .setting-item { border-color:#3b4436; }
 body[data-theme="dark"] .tag, body[data-theme="dark"] .journal-entry .tag { background:#394332; color:#d0ddc2; }
 body[data-theme="dark"] .journal-entry .activity-tag { background:#49412d; color:#e2d4aa; }
