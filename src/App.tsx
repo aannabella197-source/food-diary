@@ -253,6 +253,8 @@ function App() {
   };
 
   const openEditor = () => {
+    setEditingEntryId(null);
+    setConfirmDeleteEntry(false);
     const now = new Date();
     setEntryDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`);
     setEntryTime(now.toTimeString().slice(0, 5));
@@ -432,7 +434,7 @@ function App() {
       {selectedEntry ? (
         <>
           <header className="editor-header">
-            <button className="back-button" onClick={() => setSelectedEntry(null)} aria-label="Назад"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5M5 12l7-7M5 12l7 7" /></svg></button>
+            <button className="back-button" onClick={() => { setSelectedEntry(null); setConfirmDeleteEntry(false); }} aria-label="Назад"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5M5 12l7-7M5 12l7 7" /></svg></button>
             <h1>Запись</h1>
           </header>
           <main className="editor-main">
