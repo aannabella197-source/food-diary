@@ -838,21 +838,6 @@ function App() {
                   </div>
                 </section>
 
-                <section className="timeline">
-                  <div className="timeline-heading">
-                    <h2>Записи</h2>
-                    <span className="muted">Сегодня · {today.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}</span>
-                  </div>
-                  {todayEntries.length > 0 ? todayEntries.map((entry) => (
-                    <article className="entry" key={entry.id} onClick={() => setSelectedEntry(entry)} role="button" tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') setSelectedEntry(entry); }}>
-                      <span className="entry-time">{entry.time}</span>
-                      <div className="entry-tags">
-                        {[...entry.tags, ...entry.activity].map((tag) => <span className="tag" key={tag}>{tag}</span>)}
-                      </div>
-                      <span className="entry-arrow">›</span>
-                    </article>
-                  )) : <p className="muted">Сегодня записей пока нет</p>}
-                </section>
                 <div className="journal-search">
                   <input
                     type="search"
