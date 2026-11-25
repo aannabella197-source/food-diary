@@ -390,39 +390,47 @@ function App() {
       {selectedEntry ? (
         <>
           <header className="editor-header">
-            <button className="back-button" onClick={() => setSelectedEntry(null)} aria-label="Назад">←</button>
+            <button className="back-button" onClick={() => setSelectedEntry(null)} aria-label="Назад"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5M5 12l7-7M5 12l7 7" /></svg></button>
             <h1>Запись</h1>
           </header>
           <main className="editor-main">
             <section className="editor-card entry-detail-card">
-              <p className="muted">{formatDate(selectedEntry.date)} · {selectedEntry.time}</p>
-              <h2>Еда</h2>
-              <p>{selectedEntry.food}</p>
-              {selectedEntry.tags.length > 0 && <>
-                <h2>Тип еды</h2>
-                <div className="journal-entry-tags">{selectedEntry.tags.map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div>
-              </>}
-              {selectedEntry.carbs !== null && <>
-                <h2>Углеводы</h2>
-                <p>{selectedEntry.carbs} г</p>
-              </>}
-              {selectedEntry.activity.length > 0 && <>
-                <h2>Активность</h2>
-                <div className="journal-entry-tags">{selectedEntry.activity.map((tag) => <span className="tag activity-tag" key={tag}>{tag}</span>)}</div>
-              </>}
-              {selectedEntry.comment && <>
-                <h2>Комментарий</h2>
-                <p>{selectedEntry.comment}</p>
-              </>}
+              <p className="muted entry-detail-date">{formatDate(selectedEntry.date)} · {selectedEntry.time}</p>
+              <div className="entry-detail-row">
+                <h2>Еда</h2>
+                <p>{selectedEntry.food}</p>
+              </div>
+              {selectedEntry.tags.length > 0 && (
+                <div className="entry-detail-row">
+                  <h2>Тип еды</h2>
+                  <div className="journal-entry-tags">{selectedEntry.tags.map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div>
+                </div>
+              )}
+              {selectedEntry.carbs !== null && (
+                <div className="entry-detail-row">
+                  <h2>Углеводы</h2>
+                  <p>{selectedEntry.carbs} г</p>
+                </div>
+              )}
+              {selectedEntry.activity.length > 0 && (
+                <div className="entry-detail-row">
+                  <h2>Активность</h2>
+                  <div className="journal-entry-tags">{selectedEntry.activity.map((tag) => <span className="tag activity-tag" key={tag}>{tag}</span>)}</div>
+                </div>
+              )}
+              {selectedEntry.comment && (
+                <div className="entry-detail-row">
+                  <h2>Комментарий</h2>
+                  <p>{selectedEntry.comment}</p>
+                </div>
+              )}
             </section>
           </main>
         </>
       ) : editorOpen ? (
         <>
           <header className="editor-header">
-            <button className="back-button" onClick={() => setEditorOpen(false)}>
-              ←
-            </button>
+            <button className="back-button" onClick={() => setEditorOpen(false)}><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5M5 12l7-7M5 12l7 7" /></svg></button>
             <h1>Новая запись</h1>
           </header>
 
