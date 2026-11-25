@@ -184,6 +184,7 @@ function App() {
   const [entryComment, setEntryComment] = useState('');
   const [tab, setTab] = useState<Tab>('Дневник');
   const [settingsPage, setSettingsPage] = useState<string | null>(null);
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [aboutSections, setAboutSections] = useState({ storage: false, backup: false, export: false });
   const [foodTags, setFoodTags] = useState<string[]>(() => JSON.parse(localStorage.getItem('food-diary-food-tags') || 'null') || defaultFoodTags);
   const [activityTags, setActivityTags] = useState<string[]>(() => JSON.parse(localStorage.getItem('food-diary-activity-tags') || 'null') || defaultActivityTags);
@@ -908,7 +909,26 @@ function App() {
                 <h1>{settingsPage || tab}</h1>
               </div>
             </div>
-            <div className="profile-mark">Д</div>
+            <div className="more-menu-wrap">
+              <button className="profile-mark more-menu-button" type="button" aria-label="Открыть меню разделов" aria-expanded={moreMenuOpen} onClick={() => setMoreMenuOpen((open) => !open)}>
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <circle cx="5" cy="12" r="1.7" />
+                  <circle cx="12" cy="12" r="1.7" />
+                  <circle cx="19" cy="12" r="1.7" />
+                </svg>
+              </button>
+              {moreMenuOpen && (
+                <div className="more-menu">
+                  {['Управление тегами', 'Резервное копирование', 'Экспорт данных', 'Оформление', 'О приложении'].map((item) => (
+                    <button type="button" key={item} onClick={() => {
+                      setSettingsPage(item);
+                      setTab('Дневник');
+                      setMoreMenuOpen(false);
+                    }}>{item}</button>
+                  ))}
+                </div>
+              )}
+            </div>
           </header>
 
           <main>
@@ -1382,18 +1402,7 @@ function App() {
 
           {!settingsPage && <button className="add-button" aria-label="Добавить запись" onClick={openEditor}>+</button>}
 
-          {!settingsPage && <nav className="bottom-nav">
-            {(['Дневник', 'Ещё'] as Tab[]).map((item, index) => (
-              <button
-                key={item}
-                className={tab === item ? 'nav-item selected' : 'nav-item'}
-                onClick={() => { setSettingsPage(null); setTab(item); }}
-              >
-                <span className="nav-symbol">{['◷', '•••'][index]}</span>
-                <span>{item}</span>
-              </button>
-            ))}
-          </nav>}
+
         </>
       )}
     </div>
