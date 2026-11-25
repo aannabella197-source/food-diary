@@ -1183,3 +1183,44 @@ body[data-theme="dark"] .delete-entry-confirm {
 body[data-theme="dark"] .delete-entry-confirm p {
   color: #efc3b9;
 }
+
+
+/* Иконки тегов и перетаскивание */
+.tag-icon-picker button {
+  display: grid;
+  place-items: center;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+}
+.managed-tag {
+  cursor: grab;
+  transition: border-color .15s ease, background .15s ease, opacity .15s ease;
+}
+.managed-tag:active { cursor: grabbing; }
+.managed-tag.dragging {
+  opacity: .42;
+  border-style: dashed;
+  border-color: #82976c;
+}
+.managed-tag-icon {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+}
+.tag, .filter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.tag svg, .filter-tag svg { flex: 0 0 auto; }
+.tag-management-hint {
+  margin: -4px 0 11px;
+  color: #92998c;
+  font-size: 11px;
+  line-height: 1.45;
+}
+body[data-theme="dark"] .managed-tag.dragging {
+  border-color: #a6bd8c;
+}
+body[data-theme="dark"] .tag-management-hint { color: #a5af9b; }
