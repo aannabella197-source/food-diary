@@ -22,6 +22,8 @@ type JournalEntry = {
   activity: string[];
   carbs: number | null;
   comment: string;
+  hunger?: number;
+  mood?: string;
 };
 
 const defaultFoodTags = [
@@ -115,6 +117,7 @@ function App() {
   const [entryTime, setEntryTime] = useState(() => new Date().toTimeString().slice(0, 5));
   const [entryFood, setEntryFood] = useState('');
   const [entryCarbs, setEntryCarbs] = useState('');
+  const [entryComment, setEntryComment] = useState('');
   const [tab, setTab] = useState<Tab>('Дневник');
   const [settingsPage, setSettingsPage] = useState<string | null>(null);
   const [aboutSections, setAboutSections] = useState({ storage: false, backup: false, export: false });
@@ -258,7 +261,7 @@ function App() {
     const now = new Date();
     setEntryDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`);
     setEntryTime(now.toTimeString().slice(0, 5));
-    setEntryFood(''); setEntryCarbs('');
+    setEntryFood(''); setEntryCarbs(''); setEntryComment('');
     setSelectedTags([]);
     setShowAllFields(false);
     setShowAllFoodTags(false);
@@ -274,12 +277,13 @@ function App() {
     setEntryTime(entry.time);
     setEntryFood(entry.food);
     setEntryCarbs(entry.carbs === null ? '' : String(entry.carbs));
+    setEntryComment(entry.comment || '');
     setSelectedTags([...entry.tags, ...entry.activity]);
     setShowAllFields(false);
     setShowAllFoodTags(true);
     setShowAllActivityTags(true);
-    setHunger(3);
-    setMood('');
+    setHunger(entry.hunger ?? 3);
+    setMood(entry.mood ?? '');
     setConfirmDeleteEntry(false);
     setSelectedEntry(null);
     setEditorOpen(true);
@@ -301,7 +305,9 @@ function App() {
       tags: selectedTags.filter((tag) => foodTags.includes(tag)),
       activity: selectedTags.filter((tag) => activityTags.includes(tag)),
       carbs: entryCarbs.trim() ? Number(entryCarbs) : null,
-      comment: editingEntryId === null ? '' : journalEntries.find((entry) => entry.id === editingEntryId)?.comment || '',
+      comment: entryComment.trim(),
+      hunger,
+      mood,
     };
     if (editingEntryId !== null) {
       setJournalEntries((current) => current.map((entry) => entry.id === editingEntryId ? nextEntry : entry));
@@ -462,6 +468,18 @@ function App() {
                   <div className="journal-entry-tags">{selectedEntry.activity.map((tag) => <span className="tag activity-tag" key={tag}>{tag}</span>)}</div>
                 </div>
               )}
+              {selectedEntry.hunger !== undefined && (
+                <div className="entry-detail-row">
+                  <h2>Уровень голода</h2>
+                  <p>{selectedEntry.hunger} из 5</p>
+                </div>
+              )}
+              {selectedEntry.mood && (
+                <div className="entry-detail-row">
+                  <h2>Настроение</h2>
+                  <p>{selectedEntry.mood}</p>
+                </div>
+              )}
               {selectedEntry.comment && (
                 <div className="entry-detail-row">
                   <h2>Комментарий</h2>
@@ -604,6 +622,12 @@ function App() {
                   </div>
                 </section>
 
+                <section className="editor-card">
+                  <div className="editor-section-title">Комментарий</div>
+                  <label className="field-label">
+                    <textarea rows={3} value={entryComment} onChange={(event) => setEntryComment(event.target.value)} placeholder="Дополнительные заметки к записи" />
+                  </label>
+                </section>
                 <section className="editor-card">
                   <div className="editor-section-title">Настроение</div>
                   <div className="mood-gallery">
