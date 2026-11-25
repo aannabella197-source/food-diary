@@ -1345,9 +1345,9 @@ body[data-theme="dark"] .more-menu-button { background: transparent; color: #d0d
 .year-chart .chart-column { min-width: 0; flex: 1 1 0; }
 .year-chart .bar { width: min(19px, 85%); }
 .year-chart .bar-day { font-size: 10px; }
-.analytics-page { gap: 14px; }
+.analytics-page { gap: 9px; }
 .analytics-period, .analytics-section {
-  padding: 16px;
+  padding: 13px;
   border: 1px solid #e7eadf;
   border-radius: 15px;
   background: #fff;
@@ -1381,3 +1381,16 @@ body[data-theme="dark"] .analytics-metrics strong, body[data-theme="dark"] .anal
 body[data-theme="dark"] .analytics-metrics span, body[data-theme="dark"] .analytics-bar-row, body[data-theme="dark"] .analytics-category, body[data-theme="dark"] .analytics-observations p { color: #b2bea7; }
 body[data-theme="dark"] .analytics-category, body[data-theme="dark"] .analytics-observations { border-color: #414a3b; }
 body[data-theme="dark"] .analytics-bar-track { background: #3b4436; }
+
+.analytics-show-all {
+  margin-top: 10px;
+  padding: 7px 0;
+  border: 0;
+  background: transparent;
+  color: #71865f;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+body[data-theme="dark"] .analytics-show-all { color: #b8cba4; }
