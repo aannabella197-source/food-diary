@@ -1,0 +1,20 @@
+{
+  "name": "Дневник питания",
+  "short_name": "Дневник",
+  "description": "Личный дневник питания",
+  "lang": "ru",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f6ef",
+  "theme_color": "#f5f6ef",
+  "icons": [
+    {
+      "src": "./app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
