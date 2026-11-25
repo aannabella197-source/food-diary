@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
 import {
   Apple, Bike, Briefcase, CakeSlice, Carrot, Coffee, CupSoda,
-  Dumbbell, Fish, Footprints, GlassWater, Heart, House, Milk,
+  Dumbbell, Fish, Footprints, GlassWater, GripVertical, Heart, House, Milk,
   Salad, Soup, Sofa, Tag, Utensils, Wheat,
 } from 'lucide-react';
 import './App.css';
