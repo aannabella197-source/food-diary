@@ -210,6 +210,7 @@ function App() {
     }
   }, [theme]);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
   const [showAllFields, setShowAllFields] = useState(false);
   const [showAllFoodTags, setShowAllFoodTags] = useState(false);
   const [showAllActivityTags, setShowAllActivityTags] = useState(false);
@@ -387,7 +388,37 @@ function App() {
 
   return (
     <div className="app">
-      {editorOpen ? (
+      {selectedEntry ? (
+        <>
+          <header className="editor-header">
+            <button className="back-button" onClick={() => setSelectedEntry(null)} aria-label="Назад">←</button>
+            <h1>Запись</h1>
+          </header>
+          <main className="editor-main">
+            <section className="editor-card entry-detail-card">
+              <p className="muted">{formatDate(selectedEntry.date)} · {selectedEntry.time}</p>
+              <h2>Еда</h2>
+              <p>{selectedEntry.food}</p>
+              {selectedEntry.tags.length > 0 && <>
+                <h2>Тип еды</h2>
+                <div className="journal-entry-tags">{selectedEntry.tags.map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div>
+              </>}
+              {selectedEntry.carbs !== null && <>
+                <h2>Углеводы</h2>
+                <p>{selectedEntry.carbs} г</p>
+              </>}
+              {selectedEntry.activity.length > 0 && <>
+                <h2>Активность</h2>
+                <div className="journal-entry-tags">{selectedEntry.activity.map((tag) => <span className="tag activity-tag" key={tag}>{tag}</span>)}</div>
+              </>}
+              {selectedEntry.comment && <>
+                <h2>Комментарий</h2>
+                <p>{selectedEntry.comment}</p>
+              </>}
+            </section>
+          </main>
+        </>
+      ) : editorOpen ? (
         <>
           <header className="editor-header">
             <button className="back-button" onClick={() => setEditorOpen(false)}>
@@ -814,7 +845,7 @@ function App() {
                     <span className="muted">Сегодня · {today.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}</span>
                   </div>
                   {todayEntries.length > 0 ? todayEntries.map((entry) => (
-                    <article className="entry" key={entry.id}>
+                    <article className="entry" key={entry.id} onClick={() => setSelectedEntry(entry)} role="button" tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') setSelectedEntry(entry); }}>
                       <span className="entry-time">{entry.time}</span>
                       <div className="entry-tags">
                         {[...entry.tags, ...entry.activity].map((tag) => <span className="tag" key={tag}>{tag}</span>)}
@@ -935,7 +966,7 @@ function App() {
                       <section className="journal-day" key={group.date}>
                         <h3>{formatDate(group.date)}</h3>
                         {group.entries.map((entry) => (
-                          <article className="journal-entry" key={entry.id}>
+                          <article className="journal-entry" key={entry.id} onClick={() => setSelectedEntry(entry)} role="button" tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') setSelectedEntry(entry); }}>
                             <span className="journal-time">{entry.time}</span>
                             <div className="journal-entry-tags">
                               {entry.tags.map((tag) => (
