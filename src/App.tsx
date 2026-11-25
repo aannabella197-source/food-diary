@@ -938,12 +938,13 @@ function App() {
                     </div>
                   </div>
                 )}
-                <p className="tag-management-hint">Перетаскивай теги, чтобы менять их порядок. Стрелки рядом тоже можно использовать.</p>
+                <p className="tag-management-hint">На компьютере перетаскивай тег мышью. На телефоне удерживай значок с точками и перемещай тег. Стрелки тоже можно использовать.</p>
                 <div className="managed-tag-list">
                   {currentTags.map((tag, index) => (
                     <div
                       className={`managed-tag${currentDisabled.includes(tag) ? ' disabled' : ''}${draggedTag === tag ? ' dragging' : ''}`}
                       key={tag}
+                      data-managed-tag={tag}
                       draggable
                       onDragStart={(event) => {
                         setDraggedTag(tag);
@@ -958,7 +959,17 @@ function App() {
                         setDraggedTag(null);
                       }}
                       onDragEnd={() => setDraggedTag(null)}
+                      onPointerUp={(event) => {
+                        if (event.pointerType !== 'touch' || !draggedTag) return;
+                        const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>('[data-managed-tag]')?.dataset.managedTag;
+                        if (target) reorderTag(draggedTag, target);
+                        setDraggedTag(null);
+                      }}
+                      onPointerCancel={() => setDraggedTag(null)}
                     >
+                      <span className="managed-tag-drag-handle" aria-label="Перетащить тег" onPointerDown={(event) => {
+                        if (event.pointerType === 'touch') { event.preventDefault(); setDraggedTag(tag); }
+                      }}><GripVertical size={17} /></span>
                       <span className="managed-tag-icon"><TagGlyph name={tagIcons[tag] || 'tag'} size={18} /></span>
                       <span className="managed-tag-name">{tag}</span>
                       {currentDisabled.includes(tag) && <small>Отключён</small>}
