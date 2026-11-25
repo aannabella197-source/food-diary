@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import './App.css';
 
 type Period = 'Неделя' | 'Месяц' | 'Год';
-type Tab = 'Динамика' | 'Журнал' | 'Ещё';
+type Tab = 'Дневник' | 'Ещё';
 type Theme = 'light' | 'dark' | 'system';
 type JournalPeriod =
   | 'Все записи'
@@ -115,7 +115,7 @@ function App() {
   const [entryTime, setEntryTime] = useState(() => new Date().toTimeString().slice(0, 5));
   const [entryFood, setEntryFood] = useState('');
   const [entryCarbs, setEntryCarbs] = useState('');
-  const [tab, setTab] = useState<Tab>('Динамика');
+  const [tab, setTab] = useState<Tab>('Дневник');
   const [settingsPage, setSettingsPage] = useState<string | null>(null);
   const [aboutSections, setAboutSections] = useState({ storage: false, backup: false, export: false });
   const [foodTags, setFoodTags] = useState<string[]>(() => JSON.parse(localStorage.getItem('food-diary-food-tags') || 'null') || defaultFoodTags);
@@ -376,7 +376,6 @@ function App() {
       : Array.from({ length: 12 }, (_, index) => ({ label: new Date(today.getFullYear(), index, 1).toLocaleDateString('en-US', { month: 'short' }), date: '', count: journalEntries.filter((entry) => entry.date.startsWith(`${today.getFullYear()}-${String(index + 1).padStart(2, '0')}`)).length }));
   const chartTotal = chartData.reduce((sum, item) => sum + item.count, 0);
   const chartTitle = period === 'Неделя' ? 'Эта неделя' : period === 'Месяц' ? today.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' }) : `${today.getFullYear()} год`;
-  const todayEntries = journalEntries.filter((entry) => entry.date === todayString).sort((a, b) => a.time.localeCompare(b.time));
 
   const formatDate = (date: string) => {
     return new Date(`${date}T12:00:00`).toLocaleDateString('ru-RU', {
@@ -800,7 +799,7 @@ function App() {
               </section>
             )}
 
-            {!settingsPage && tab === 'Динамика' && (
+            {!settingsPage && tab === 'Дневник' && (
               <>
                 <section className="period-switch">
                   {(['Неделя', 'Месяц', 'Год'] as Period[]).map((item) => (
@@ -854,11 +853,6 @@ function App() {
                     </article>
                   )) : <p className="muted">Сегодня записей пока нет</p>}
                 </section>
-              </>
-            )}
-
-            {!settingsPage && tab === 'Журнал' && (
-              <section className="journal">
                 <div className="journal-search">
                   <input
                     type="search"
@@ -988,7 +982,7 @@ function App() {
                     </div>
                   )}
                 </div>
-              </section>
+              </>
             )}
 
             {!settingsPage && tab === 'Ещё' && (
@@ -1006,13 +1000,13 @@ function App() {
           {!settingsPage && <button className="add-button" aria-label="Добавить запись" onClick={openEditor}>+</button>}
 
           {!settingsPage && <nav className="bottom-nav">
-            {(['Динамика', 'Журнал', 'Ещё'] as Tab[]).map((item, index) => (
+            {(['Дневник', 'Ещё'] as Tab[]).map((item, index) => (
               <button
                 key={item}
                 className={tab === item ? 'nav-item selected' : 'nav-item'}
                 onClick={() => { setSettingsPage(null); setTab(item); }}
               >
-                <span className="nav-symbol">{['◷', '▤', '•••'][index]}</span>
+                <span className="nav-symbol">{['◷', '•••'][index]}</span>
                 <span>{item}</span>
               </button>
             ))}
