@@ -1,6 +1,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
+import {
+  Apple, Bike, Briefcase, CakeSlice, Carrot, Coffee, CupSoda,
+  Dumbbell, Fish, Footprints, GlassWater, Heart, House, Milk,
+  Salad, Soup, Sofa, Tag, Utensils, Wheat,
+} from 'lucide-react';
 import './App.css';
 
 type Period = 'Неделя' | 'Месяц' | 'Год';
@@ -13,6 +18,29 @@ type JournalPeriod =
   | 'Последние 7 дней'
   | 'Последние 30 дней'
   | 'Произвольный период';
+
+const tagIconOptions = [
+  { value: 'utensils', label: 'Еда', Icon: Utensils },
+  { value: 'coffee', label: 'Кофе', Icon: Coffee },
+  { value: 'apple', label: 'Фрукты', Icon: Apple },
+  { value: 'salad', label: 'Салат', Icon: Salad },
+  { value: 'soup', label: 'Суп', Icon: Soup },
+  { value: 'fish', label: 'Рыба', Icon: Fish },
+  { value: 'glass-water', label: 'Вода', Icon: GlassWater },
+  { value: 'cup-soda', label: 'Напиток', Icon: CupSoda },
+  { value: 'cake-slice', label: 'Десерт', Icon: CakeSlice },
+  { value: 'wheat', label: 'Злаки', Icon: Wheat },
+  { value: 'milk', label: 'Молочное', Icon: Milk },
+  { value: 'carrot', label: 'Овощи', Icon: Carrot },
+  { value: 'dumbbell', label: 'Тренировка', Icon: Dumbbell },
+  { value: 'footprints', label: 'Прогулка', Icon: Footprints },
+  { value: 'bike', label: 'Велосипед', Icon: Bike },
+  { value: 'heart', label: 'Здоровье', Icon: Heart },
+  { value: 'house', label: 'Дом', Icon: House },
+  { value: 'briefcase', label: 'Работа', Icon: Briefcase },
+  { value: 'sofa', label: 'Отдых', Icon: Sofa },
+  { value: 'tag', label: 'Общее', Icon: Tag },
+];
 
 function TagGlyph({ name, size = 16 }: { name: string; size?: number }) {
   const Icon = tagIconOptions.find((option) => option.value === name)?.Icon || Tag;
@@ -135,9 +163,10 @@ function App() {
   const [tagEditorOpen, setTagEditorOpen] = useState(false);
   const [editingTag, setEditingTag] = useState<string | null>(null);
   const [tagDraft, setTagDraft] = useState('');
-  const [tagIcon, setTagIcon] = useState('◇');
+  const [tagIcon, setTagIcon] = useState('tag');
   const [tagIcons, setTagIcons] = useState<Record<string, string>>(() => JSON.parse(localStorage.getItem('food-diary-tag-icons') || '{}'));
   const [deleteTag, setDeleteTag] = useState<string | null>(null);
+  const [draggedTag, setDraggedTag] = useState<string | null>(null);
   const [exportFormat, setExportFormat] = useState<'Excel (.xlsx)' | 'CSV (.csv)'>('CSV (.csv)');
   const [exportPeriod, setExportPeriod] = useState('Все записи');
   const [exportFrom, setExportFrom] = useState('2026-11-01');
@@ -347,6 +376,19 @@ function App() {
     setEditingTag(null);
     setTagDraft('');
   };
+  const reorderTag = (sourceTag: string, targetTag: string) => {
+    if (sourceTag === targetTag) return;
+    setCurrentTags((items) => {
+      const from = items.indexOf(sourceTag);
+      const to = items.indexOf(targetTag);
+      if (from < 0 || to < 0) return items;
+      const next = [...items];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
+  };
+
   const moveTag = (tag: string, direction: -1 | 1) => {
     const index = currentTags.indexOf(tag);
     const nextIndex = index + direction;
@@ -873,7 +915,7 @@ function App() {
                 </div>
                 <div className="tag-management-heading">
                   <span>{currentTags.length} из 30 тегов</span>
-                  <button className="tag-add-button" disabled={currentTags.length >= 30} onClick={() => { setEditingTag(null); setTagDraft(''); setTagIcon('◇'); setTagEditorOpen(true); }}>+ Добавить тег</button>
+                  <button className="tag-add-button" disabled={currentTags.length >= 30} onClick={() => { setEditingTag(null); setTagDraft(''); setTagIcon('tag'); setTagEditorOpen(true); }}>+ Добавить тег</button>
                 </div>
                 {tagEditorOpen && (
                   <div className="tag-edit-panel">
@@ -882,8 +924,12 @@ function App() {
                     </label>
                     <span className="muted">Выбери значок</span>
                     <div className="tag-icon-picker">
-                      {['◇', '○', '□', '△', '☆', '☼', '⌂', '♧', '≋', '▤', '◉', '⌁'].map((icon) => (
-                        <button key={icon} className={tagIcon === icon ? 'selected' : ''} onClick={() => setTagIcon(icon)}>{icon}</button>
+                      {tagIconOptions.map(({ value, label }) => (
+                        <button type="button" key={value} title={label} aria-label={label}
+                          className={tagIcon === value ? 'selected' : ''}
+                          onClick={() => setTagIcon(value)}>
+                          <TagGlyph name={value} size={18} />
+                        </button>
                       ))}
                     </div>
                     <div className="tag-edit-actions">
@@ -892,16 +938,34 @@ function App() {
                     </div>
                   </div>
                 )}
+                <p className="tag-management-hint">Перетаскивай теги, чтобы менять их порядок. Стрелки рядом тоже можно использовать.</p>
                 <div className="managed-tag-list">
                   {currentTags.map((tag, index) => (
-                    <div className={currentDisabled.includes(tag) ? 'managed-tag disabled' : 'managed-tag'} key={tag}>
-                      <span className="managed-tag-icon">{tagIcons[tag] || '◇'}</span>
+                    <div
+                      className={`managed-tag${currentDisabled.includes(tag) ? ' disabled' : ''}${draggedTag === tag ? ' dragging' : ''}`}
+                      key={tag}
+                      draggable
+                      onDragStart={(event) => {
+                        setDraggedTag(tag);
+                        event.dataTransfer.effectAllowed = 'move';
+                        event.dataTransfer.setData('text/plain', tag);
+                      }}
+                      onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = 'move'; }}
+                      onDrop={(event) => {
+                        event.preventDefault();
+                        const source = event.dataTransfer.getData('text/plain') || draggedTag;
+                        if (source) reorderTag(source, tag);
+                        setDraggedTag(null);
+                      }}
+                      onDragEnd={() => setDraggedTag(null)}
+                    >
+                      <span className="managed-tag-icon"><TagGlyph name={tagIcons[tag] || 'tag'} size={18} /></span>
                       <span className="managed-tag-name">{tag}</span>
                       {currentDisabled.includes(tag) && <small>Отключён</small>}
                       <div className="managed-tag-actions">
                         <button aria-label="Выше" disabled={index === 0} onClick={() => moveTag(tag, -1)}>↑</button>
                         <button aria-label="Ниже" disabled={index === currentTags.length - 1} onClick={() => moveTag(tag, 1)}>↓</button>
-                        <button aria-label="Изменить" onClick={() => { setEditingTag(tag); setTagDraft(tag); setTagIcon(tagIcons[tag] || '◇'); setTagEditorOpen(true); }}>✎</button>
+                        <button aria-label="Изменить" onClick={() => { setEditingTag(tag); setTagDraft(tag); setTagIcon(tagIcons[tag] || 'tag'); setTagEditorOpen(true); }}>✎</button>
                         <button aria-label={currentDisabled.includes(tag) ? 'Включить' : 'Отключить'} onClick={() => setCurrentDisabled((items) => items.includes(tag) ? items.filter((item) => item !== tag) : [...items, tag])}>{currentDisabled.includes(tag) ? '✓' : 'Ⅱ'}</button>
                         <button aria-label="Удалить" onClick={() => setDeleteTag(tag)}>×</button>
                       </div>
@@ -1182,7 +1246,7 @@ function App() {
                             className={filterTags.includes(tag) ? 'filter-tag selected' : 'filter-tag'}
                             onClick={() => toggleFilterTag(tag)}
                           >
-                            {tag}
+                            <TagGlyph name={tagIcons[tag] || 'tag'} size={13} />{tag}
                           </button>
                         ))}
                       </div>
@@ -1224,10 +1288,10 @@ function App() {
                             <span className="journal-time">{entry.time}</span>
                             <div className="journal-entry-tags">
                               {entry.tags.map((tag) => (
-                                <span className="tag" key={tag}>{tag}</span>
+                                <span className="tag" key={tag}><TagGlyph name={tagIcons[tag] || 'tag'} size={13} />{tag}</span>
                               ))}
                               {entry.activity.map((tag) => (
-                                <span className="tag activity-tag" key={tag}>{tag}</span>
+                                <span className="tag activity-tag" key={tag}><TagGlyph name={tagIcons[tag] || 'tag'} size={13} />{tag}</span>
                               ))}
                             </div>
                             <span className="entry-arrow">›</span>
