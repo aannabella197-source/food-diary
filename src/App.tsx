@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
 import {
-  Apple, Beef, Bike, Broom, Briefcase, CakeSlice, Carrot, Cherry, Coffee, CupSoda,
+  Apple, Beef, Bike, Brush, Briefcase, CakeSlice, Carrot, Cherry, Coffee, CupSoda,
   Dumbbell, Fish, Footprints, GlassWater, GripVertical, Heart, House, Milk, MoonStar,
   Salad, Soup, Sofa, Sunrise, Tag, Utensils, Wheat, WheatOff,
 } from 'lucide-react';
@@ -38,7 +38,7 @@ const tagIconOptions = [
   { value: 'wheat-off', label: 'Без глютена', Icon: WheatOff },
   { value: 'beef', label: 'Мясное', Icon: Beef },
   { value: 'cherry', label: 'Вишни', Icon: Cherry },
-  { value: 'broom', label: 'Веник', Icon: Broom },
+  { value: 'broom', label: 'Веник', Icon: Brush },
   { value: 'dumbbell', label: 'Тренировка', Icon: Dumbbell },
   { value: 'footprints', label: 'Прогулка', Icon: Footprints },
   { value: 'bike', label: 'Велосипед', Icon: Bike },
@@ -49,8 +49,8 @@ const tagIconOptions = [
   { value: 'tag', label: 'Общее', Icon: Tag },
 ];
 
-function TomatoIcon({ size = 16 }: { size?: number }) {
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+function TomatoIcon({ size = 16, strokeWidth = 1.8 }: { size?: number; strokeWidth?: number; 'aria-hidden'?: boolean }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="M12 7c-1.4-2.4-3.1-3.2-5-3 1.1 1.5 2.5 2.4 5 3Z" />
     <path d="M12 7c1.1-2.6 2.8-3.5 4.8-3.3-.8 1.6-2.2 2.7-4.8 3.3Z" />
     <path d="M12 7c-1.8-1.2-3.5-1.2-5-.5" />
