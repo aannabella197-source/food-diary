@@ -132,7 +132,7 @@ function App() {
   const [tagIcon, setTagIcon] = useState('◇');
   const [tagIcons, setTagIcons] = useState<Record<string, string>>(() => JSON.parse(localStorage.getItem('food-diary-tag-icons') || '{}'));
   const [deleteTag, setDeleteTag] = useState<string | null>(null);
-  const [exportFormat, setExportFormat] = useState<'Excel (.xlsx)' | 'CSV (.csv)'>('Excel (.xlsx)');
+  const [exportFormat, setExportFormat] = useState<'Excel (.xlsx)' | 'CSV (.csv)'>('CSV (.csv)');
   const [exportPeriod, setExportPeriod] = useState('Все записи');
   const [exportFrom, setExportFrom] = useState('2026-11-01');
   const [exportTo, setExportTo] = useState('2026-11-24');
@@ -247,6 +247,56 @@ function App() {
     localStorage.setItem('food-diary-last-backup', JSON.stringify(info));
   };
 
+  const exportEntries = journalEntries
+    .filter((entry) => {
+      if (exportPeriod === 'Текущий месяц') {
+        const now = new Date();
+        const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+        return entry.date >= monthStart && entry.date <= toDateKey(new Date());
+      }
+      if (exportPeriod === 'Последние 7 дней') {
+        const end = new Date();
+        end.setHours(0, 0, 0, 0);
+        const start = new Date(end);
+        start.setDate(start.getDate() - 6);
+        return entry.date >= toDateKey(start) && entry.date <= toDateKey(end);
+      }
+      if (exportPeriod === 'Произвольный период') {
+        if (exportFrom && entry.date < exportFrom) return false;
+        if (exportTo && entry.date > exportTo) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+
+  const exportCsv = () => {
+    if (exportEntries.length === 0 || exportFormat !== 'CSV (.csv)') return;
+    const headers = ['Дата', 'Время', 'Еда'];
+    if (includeTags) headers.push('Теги еды', 'Активность');
+    if (includeCarbs) headers.push('Углеводы (г)', 'Комментарий');
+    if (includeHunger) headers.push('Уровень голода', 'Настроение');
+    const rows = exportEntries.map((entry) => {
+      const row: (string | number)[] = [entry.date, entry.time, entry.food];
+      if (includeTags) row.push(entry.tags.join(', '), entry.activity.join(', '));
+      if (includeCarbs) row.push(entry.carbs ?? '', entry.comment || '');
+      if (includeHunger) row.push(entry.hunger ?? '', entry.mood || '');
+      return row;
+    });
+    const escapeCell = (value: string | number) => {
+      const cell = String(value);
+      return /[;"\r\n]/.test(cell) ? '"' + cell.replace(/"/g, '""') + '"' : cell;
+    };
+    const csv = [headers, ...rows].map((row) => row.map(escapeCell).join(';')).join('\r\n');
+    const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'food-diary-export-' + new Date().toISOString().slice(0, 10) + '.csv';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
   const currentTags = tagCategory === 'food' ? foodTags : activityTags;
   const setCurrentTags = tagCategory === 'food' ? setFoodTags : setActivityTags;
   const currentDisabled = tagCategory === 'food' ? disabledFoodTags : disabledActivityTags;
@@ -849,9 +899,9 @@ function App() {
                   <h2>Формат файла</h2>
                   <div className="export-choice-row">
                     {(['Excel (.xlsx)', 'CSV (.csv)'] as const).map((format) => (
-                      <button key={format} className={exportFormat === format ? 'export-choice active' : 'export-choice'} onClick={() => setExportFormat(format)}>
+                      <button key={format} disabled={format === 'Excel (.xlsx)'} className={exportFormat === format ? 'export-choice active' : 'export-choice'} onClick={() => setExportFormat(format)}>
                         <span className="export-radio">{exportFormat === format ? '✓' : ''}</span>
-                        {format}
+                        {format}{format === 'Excel (.xlsx)' ? ' — позже' : ''}
                       </button>
                     ))}
                   </div>
@@ -882,11 +932,11 @@ function App() {
                   <h2>Предварительный просмотр</h2>
                   <div><span>Формат</span><strong>{exportFormat}</strong></div>
                   <div><span>Период</span><strong>{exportPeriod === 'Произвольный период' ? `${exportFrom} — ${exportTo}` : exportPeriod}</strong></div>
-                  <div><span>Записей для экспорта</span><strong>{journalEntries.length}</strong></div>
-                  <p>Описание еды, даты и время будут включены в файл.</p>
+                  <div><span>Записей для экспорта</span><strong>{exportEntries.length}</strong></div>
+                  <p>В файл попадут записи за выбранный период и только отмеченные дополнительные поля.</p>
                 </div>
-                <button className="export-button" disabled>Экспортировать файл</button>
-                <p className="export-note">Создание файла появится после подключения функции экспорта.</p>
+                <button className="export-button" onClick={exportCsv} disabled={exportEntries.length === 0 || exportFormat !== 'CSV (.csv)'}>Экспортировать CSV-файл</button>
+                <p className="export-note">{exportEntries.length === 0 ? 'За выбранный период записей нет.' : 'Файл CSV сохранится на устройство. Его можно открыть в Excel или Google Таблицах.'}</p>
               </section>
             )}
 
@@ -925,7 +975,7 @@ function App() {
                   <button className="about-section-toggle" onClick={() => setAboutSections((current) => ({ ...current, export: !current.export }))} aria-expanded={aboutSections.export}>
                     <span>Экспорт данных</span><span className="about-section-chevron">{aboutSections.export ? '⌃' : '⌄'}</span>
                   </button>
-                  {aboutSections.export && <p className="about-section-content">В разделе «Ещё» → «Экспорт данных» можно будет выбрать формат Excel или CSV, период и состав данных для выгрузки.</p>}
+                  {aboutSections.export && <p className="about-section-content">В разделе «Ещё» → «Экспорт данных» можно выбрать период и состав данных, а затем скачать файл CSV для Excel или Google Таблиц.</p>}
                 </div>
 
                 <p className="about-disclaimer">Дневник предназначен для личных записей и не является медицинским приложением.</p>
