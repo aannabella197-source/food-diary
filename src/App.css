@@ -343,14 +343,32 @@ h2 {
 }
 
 .back-button {
+  display: grid;
+  place-items: center;
+  flex: 0 0 42px;
   width: 42px;
   height: 42px;
+  padding: 0;
   border: 0;
-  border-radius: 0;
+  border-radius: 10px;
   background: transparent;
   color: #526447;
-  font-size: 30px;
-  font-weight: 700;
+  cursor: pointer;
+}
+
+.back-button svg {
+  display: block;
+  width: 27px;
+  height: 27px;
+  overflow: visible;
+}
+
+.back-button svg path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .editor-main {
@@ -690,8 +708,12 @@ h2 {
   font-weight: 600;
 }
 
+.journal-search {
+  margin-top: 12px;
+}
+
 .journal-results {
-  margin-top: 8px;
+  margin-top: 14px;
 }
 
 .journal-results-heading {
@@ -798,14 +820,7 @@ h2 {
 }
 
 .settings-back {
-  display: grid;
-  place-items: center;
-  flex: 0 0 42px;
-  padding: 0;
-  border-radius: 0;
-  background: transparent;
-  font-weight: 700;
-  line-height: 1;
+  align-self: center;
 }
 
 .settings-page {
@@ -1050,23 +1065,42 @@ body[data-theme="dark"] .about-section-chevron{color:#b2c69d}
   outline: 2px solid #82976c;
   outline-offset: 3px;
 }
-.entry-detail-card h2 {
-  margin: 20px 0 8px;
+.entry-detail-card .entry-detail-date {
+  margin: 0 0 14px;
+  color: #858e7c;
+  font-size: 13px;
+}
+
+.entry-detail-row {
+  display: grid;
+  grid-template-columns: minmax(88px, 0.38fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid #e8ebdf;
+}
+
+.entry-detail-row h2 {
+  margin: 0;
   color: #526447;
   font-size: 14px;
+  line-height: 1.5;
 }
-.entry-detail-card h2:first-of-type {
-  margin-top: 18px;
-}
-.entry-detail-card p {
+
+.entry-detail-row p {
   margin: 0;
   line-height: 1.55;
   overflow-wrap: anywhere;
 }
-.entry-detail-card .muted {
-  color: #858e7c;
-  font-size: 13px;
+
+.entry-detail-row .journal-entry-tags {
+  margin: 0;
 }
-.entry-detail-card .journal-entry-tags {
-  margin-top: 6px;
+
+body[data-theme="dark"] .entry-detail-row {
+  border-color: #414a3b;
+}
+
+body[data-theme="dark"] .entry-detail-row h2 {
+  color: #c2ceb7;
 }
