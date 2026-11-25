@@ -956,10 +956,21 @@ function App() {
                     <span className="muted">Выбери значок</span>
                     <div className="tag-icon-picker">
                       {tagIconOptions.map(({ value, label }) => (
-                        <button type="button" key={value} title={label} aria-label={label}
+                        <button
+                          type="button"
+                          key={value}
+                          title={label}
+                          aria-label={label}
+                          aria-pressed={tagIcon === value}
                           className={tagIcon === value ? 'selected' : ''}
-                          onClick={() => setTagIcon(value)}>
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            setTagIcon(value);
+                          }}
+                        >
                           <TagGlyph name={value} size={18} />
+                          <span className="tag-icon-label">{label}</span>
                         </button>
                       ))}
                     </div>
