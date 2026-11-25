@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx';
 import type { LucideProps } from 'lucide-react';
 import {
   Apple, Beef, Bike, Brush, Briefcase, CakeSlice, Carrot, Cherry, Coffee, CupSoda,
-  Dumbbell, Fish, Footprints, GlassWater, GripVertical, Heart, House, Milk, MoonStar,
+  Dumbbell, Fish, Footprints, GlassWater, GripVertical, Heart, House, Milk, MoonStar, Nut,
   Salad, Soup, Sofa, Sunrise, Tag, Utensils, Wheat, WheatOff,
 } from 'lucide-react';
 import './App.css';
@@ -38,6 +38,7 @@ const tagIconOptions = [
   { value: 'dinner', label: 'Ужин', Icon: MoonStar },
   { value: 'wheat-off', label: 'Без глютена', Icon: WheatOff },
   { value: 'beef', label: 'Мясное', Icon: Beef },
+  { value: 'nut', label: 'Орехи', Icon: Nut },
   { value: 'cherry', label: 'Вишни', Icon: Cherry },
   { value: 'broom', label: 'Веник', Icon: Brush },
   { value: 'dumbbell', label: 'Тренировка', Icon: Dumbbell },
@@ -67,6 +68,7 @@ function defaultTagIcon(tag: string) {
   if (normalized === 'овощи') return 'tomato';
   if (normalized === 'без глютена') return 'wheat-off';
   if (normalized === 'мясное') return 'beef';
+  if (normalized === 'орехи') return 'nut';
   if (normalized === 'вишни') return 'cherry';
   if (normalized === 'домашние дела') return 'broom';
   return 'tag';
@@ -308,7 +310,7 @@ function App() {
     document.body.appendChild(link);
     link.click();
     link.remove();
-    URL.revokeObjectURL(url);
+    window.setTimeout(() => URL.revokeObjectURL(url), 1500);
     const info = { createdAt, size: blob.size };
     setBackupInfo(info);
     localStorage.setItem('food-diary-last-backup', JSON.stringify(info));
@@ -1205,7 +1207,12 @@ function App() {
                   </ul>
                 </div>
 
-                <p className="backup-note">Файл копии можно сохранить в папке OneDrive и выбрать здесь при восстановлении. Восстановление заменяет текущие записи и настройки. Автоматической синхронизации нет.</p>
+                <div className="backup-location-help">
+                  <strong>Где найти скачанную копию на телефоне</strong>
+                  <p>После нажатия «Создать копию» файл скачивается в Chrome. Обычно он находится в приложении «Файлы» → «Загрузки» или в Chrome → меню ⋮ → «Скачанные файлы».</p>
+                  <p>Чтобы восстановить данные, нажми «Выбрать файл» и выбери файл с названием, начинающимся на <b>food-diary-backup-</b>. Если сохраняешь копию в OneDrive, сначала выбери её там.</p>
+                </div>
+                <p className="backup-note">Восстановление заменяет текущие записи и настройки. Автоматической синхронизации нет.</p>
               </section>
             )}
 
@@ -1354,8 +1361,22 @@ function App() {
 
                 <div className="journal-results">
                   <div className="journal-results-heading">
-                    <h2>Все записи</h2>
-                    <span className="muted">{filteredEntries.length} записей</span>
+                    <div>
+                      <h2>Все записи</h2>
+                      <span className="muted">{filteredEntries.length} записей</span>
+                    </div>
+                    <button
+                      className="delete-all-entries-button"
+                      disabled={journalEntries.length === 0}
+                      onClick={() => {
+                        if (!window.confirm(`Удалить все записи дневника (${journalEntries.length})? Это действие нельзя отменить. Если понадобится, предварительно создай резервную копию.`)) return;
+                        setJournalEntries([]);
+                        setSelectedEntry(null);
+                        setEditingEntryId(null);
+                      }}
+                    >
+                      Удалить все
+                    </button>
                   </div>
 
                   {groupedEntries.length > 0 ? (
