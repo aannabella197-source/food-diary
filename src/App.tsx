@@ -21,6 +21,9 @@ import { BackButton } from './components/BackButton';
 import { EntryDetailPage } from './pages/EntryDetailPage';
 import { EntryEditorPage } from './pages/EntryEditorPage';
 import { useEntryDraft } from './entryDraft';
+import { useAndroidBack } from './useAndroidBack';
+import { filterJournalEntries, groupEntriesByDate } from './journalFilter';
+import { buildChart, formatChartSelection } from './chartData';
 import { formatEntryCount, journalPeriods, mealTagsFirst, monthStartKey, pluralDays, todayKey } from './format';
 
 function App() {
@@ -351,165 +354,14 @@ function App() {
       : editorOpen
         ? (editingEntryId !== null ? 2 : 1)
         : screenUnderMenuDepth;
-  const historyDepth = useRef(0);
-  const ignoreNextPop = useRef(false);
-  const fallbackBackRef = useRef(fallbackBack);
-  useEffect(() => { fallbackBackRef.current = fallbackBack; });
-
-  const handleInAppBack = () => {
-    if (historyDepth.current > 0) {
-      window.history.back();
-    } else {
-      fallbackBack();
-    }
-  };
-
-  useEffect(() => {
-    window.history.replaceState({ foodDiaryApp: true, depth: 0 }, '');
-    historyDepth.current = 0;
-
-    const handlePopState = (event: PopStateEvent) => {
-      const depth = typeof event.state?.depth === 'number' ? event.state.depth : 0;
-      historyDepth.current = depth;
-      if (ignoreNextPop.current) {
-        ignoreNextPop.current = false;
-        return;
-      }
-      fallbackBackRef.current();
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
-  useEffect(() => {
-    const current = historyDepth.current;
-    if (currentScreenDepth > current) {
-      for (let depth = current + 1; depth <= currentScreenDepth; depth += 1) {
-        window.history.pushState({ foodDiaryApp: true, depth }, '');
-      }
-      historyDepth.current = currentScreenDepth;
-    } else if (currentScreenDepth < current) {
-      // The app went back by itself (saved, deleted, closed the menu):
-      // drop the extra history entries without triggering another Back.
-      ignoreNextPop.current = true;
-      historyDepth.current = currentScreenDepth;
-      window.history.go(currentScreenDepth - current);
-    }
-  }, [currentScreenKey, currentScreenDepth]);
+  const handleInAppBack = useAndroidBack(currentScreenKey, currentScreenDepth, fallbackBack);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const todayString = [
-    today.getFullYear(),
-    String(today.getMonth() + 1).padStart(2, '0'),
-    String(today.getDate()).padStart(2, '0'),
-  ].join('-');
-
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-
-  const yesterdayString = [
-    yesterday.getFullYear(),
-    String(yesterday.getMonth() + 1).padStart(2, '0'),
-    String(yesterday.getDate()).padStart(2, '0'),
-  ].join('-');
-
-  const filteredEntries = journalEntries
-    .filter((entry) => {
-      const query = searchText.trim().toLowerCase();
-
-      const searchableText = [
-        entry.food,
-        entry.comment,
-        ...entry.tags,
-        ...entry.activity,
-      ].join(' ').toLowerCase();
-
-      if (query && !searchableText.includes(query)) {
-        return false;
-      }
-
-      if (journalPeriod === 'Сегодня' && entry.date !== todayString) {
-        return false;
-      }
-
-      if (journalPeriod === 'Вчера' && entry.date !== yesterdayString) {
-        return false;
-      }
-
-      if (
-        journalPeriod === 'Последние 7 дней' ||
-        journalPeriod === 'Последние 30 дней'
-      ) {
-        const days = journalPeriod === 'Последние 7 дней' ? 7 : 30;
-        const startDate = new Date(today);
-        startDate.setDate(startDate.getDate() - (days - 1));
-
-        const entryDate = new Date(`${entry.date}T12:00:00`);
-
-        if (entryDate < startDate || entryDate > today) {
-          return false;
-        }
-      }
-
-      if (journalPeriod === 'Произвольный период') {
-        if (dateFrom && entry.date < dateFrom) return false;
-        if (dateTo && entry.date > dateTo) return false;
-      }
-
-      if (chartSelection && !entry.date.startsWith(chartSelection)) {
-        return false;
-      }
-
-      if (filterTags.length > 0) {
-        const allEntryTags = [...entry.tags, ...entry.activity];
-        if (!filterTags.some((tag) => allEntryTags.includes(tag))) {
-          return false;
-        }
-      }
-
-      return true;
-    })
-    .sort((a, b) => {
-      const dateComparison = b.date.localeCompare(a.date);
-      return dateComparison || b.time.localeCompare(a.time);
-    });
-
-  const groupedEntries = filteredEntries.reduce<
-    { date: string; entries: JournalEntry[] }[]
-  >((groups, entry) => {
-    const existingGroup = groups.find((group) => group.date === entry.date);
-
-    if (existingGroup) {
-      existingGroup.entries.push(entry);
-    } else {
-      groups.push({ date: entry.date, entries: [entry] });
-    }
-
-    return groups;
-  }, []);
-
-  const toDateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  const countForDate = (dateKey: string) => journalEntries.filter((entry) => entry.date === dateKey).length;
-  // 0 = current month/year, -1 = previous one, and so on. Not saved between launches.
-  const earliestEntryDate = journalEntries.reduce<string | null>((min, entry) => (!min || entry.date < min ? entry.date : min), null);
-  const earliestYear = earliestEntryDate ? Number(earliestEntryDate.slice(0, 4)) : today.getFullYear();
-  const earliestMonth = earliestEntryDate ? Number(earliestEntryDate.slice(5, 7)) - 1 : today.getMonth();
-  const minChartOffset = period === 'Месяц'
-    ? Math.min(0, (earliestYear - today.getFullYear()) * 12 + (earliestMonth - today.getMonth()))
-    : Math.min(0, earliestYear - today.getFullYear());
-  const safeChartOffset = Math.max(minChartOffset, Math.min(0, chartOffset));
-  const chartMonthStart = new Date(today.getFullYear(), today.getMonth() + safeChartOffset, 1);
-  const chartYear = today.getFullYear() + safeChartOffset;
-  const chartData = period === 'Месяц'
-    ? Array.from({ length: new Date(chartMonthStart.getFullYear(), chartMonthStart.getMonth() + 1, 0).getDate() }, (_, index) => {
-        const date = new Date(chartMonthStart.getFullYear(), chartMonthStart.getMonth(), index + 1);
-        return { key: toDateKey(date), label: String(index + 1), date: date.toLocaleDateString('ru-RU', { weekday: 'short' }).replace('.', ''), count: countForDate(toDateKey(date)) };
-      })
-    : Array.from({ length: 12 }, (_, index) => ({ key: `${chartYear}-${String(index + 1).padStart(2, '0')}`, label: new Date(chartYear, index, 1).toLocaleDateString('ru-RU', { month: 'short' }).replace('.', ''), date: '', count: journalEntries.filter((entry) => entry.date.startsWith(`${chartYear}-${String(index + 1).padStart(2, '0')}`)).length }));
-  const chartTotal = chartData.reduce((sum, item) => sum + item.count, 0);
-  const chartTitle = period === 'Месяц' ? chartMonthStart.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' }) : `${chartYear} год`;
+  const filteredEntries = filterJournalEntries(journalEntries, { searchText, journalPeriod, dateFrom, dateTo, chartSelection, filterTags }, today);
+  const groupedEntries = groupEntriesByDate(filteredEntries);
+  const { minChartOffset, safeChartOffset, chartData, chartTotal, chartTitle } = buildChart(journalEntries, period, chartOffset, today);
 
   const chartVisible = !selectedEntry && !editorOpen && !settingsPage;
   const todayDayOfMonth = today.getDate();
@@ -535,11 +387,7 @@ function App() {
     };
   }, [period, chartVisible, todayDayOfMonth, safeChartOffset]);
 
-  const chartSelectionLabel = chartSelection
-    ? chartSelection.length === 10
-      ? new Date(`${chartSelection}T12:00:00`).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', ...(chartSelection.startsWith(String(today.getFullYear())) ? {} : { year: 'numeric' }) })
-      : new Date(`${chartSelection}-01T12:00:00`).toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' }).replace(' г.', '')
-    : '';
+  const chartSelectionLabel = formatChartSelection(chartSelection, today);
 
   return (
     <div className="app">
