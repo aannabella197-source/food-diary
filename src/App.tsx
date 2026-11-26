@@ -843,10 +843,22 @@ function App() {
   const todayDayOfMonth = today.getDate();
   useEffect(() => {
     // Runs again whenever the chart reappears, so today's date is near the left edge.
-    if (chartVisible && period === 'Месяц' && chartScrollRef.current) {
+    if (!chartVisible || period !== 'Месяц') return;
+    const scrollToToday = () => {
+      const chart = chartScrollRef.current;
+      if (!chart) return;
       const dayWidth = 36;
-      chartScrollRef.current.scrollLeft = Math.max(0, (todayDayOfMonth - 1) * dayWidth);
-    }
+      // Instant, not smooth: on phones a smooth scroll can be interrupted
+      // while the screen is still being laid out after returning to it.
+      chart.scrollTo({ left: Math.max(0, (todayDayOfMonth - 1) * dayWidth), behavior: 'instant' });
+    };
+    scrollToToday();
+    const frame = window.requestAnimationFrame(scrollToToday);
+    const timer = window.setTimeout(scrollToToday, 200);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
   }, [period, chartVisible, todayDayOfMonth]);
 
   const analyticsStart = analyticsPeriod === 'Месяц'
