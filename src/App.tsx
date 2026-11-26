@@ -16,6 +16,11 @@ import { AnalyticsPage } from './pages/AnalyticsPage';
 import { TagManagementPage } from './pages/TagManagementPage';
 import { useTagManagementState } from './tagManagementState';
 import { useAnalyticsSettings } from './analyticsSettings';
+import { formatEntryDate } from './format';
+import { BackButton } from './components/BackButton';
+import { EntryDetailPage } from './pages/EntryDetailPage';
+import { EntryEditorPage } from './pages/EntryEditorPage';
+import { useEntryDraft } from './entryDraft';
 import { formatEntryCount, journalPeriods, mealTagsFirst, monthStartKey, pluralDays, todayKey } from './format';
 
 function App() {
@@ -28,11 +33,11 @@ function App() {
   const analyticsSettings = useAnalyticsSettings();
   const chartScrollRef = useRef<HTMLDivElement>(null);
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>(() => loadStored('food-diary-entries', [], isJournalEntryList));
-  const [entryDate, setEntryDate] = useState(() => { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; });
-  const [entryTime, setEntryTime] = useState(() => new Date().toTimeString().slice(0, 5));
-  const [entryFood, setEntryFood] = useState('');
-  const [entryCarbs, setEntryCarbs] = useState('');
-  const [entryComment, setEntryComment] = useState('');
+  // Fields of the entry being added or edited.
+  const draft = useEntryDraft();
+  const {
+    entryDate, setEntryDate, entryTime, setEntryTime, entryFood, setEntryFood, entryCarbs, setEntryCarbs, entryComment, setEntryComment, setShowAllFields, setShowAllFoodTags, setShowAllActivityTags, selectedTags, setSelectedTags, hunger, setHunger, mood, setMood,
+  } = draft;
   const [settingsPage, setSettingsPage] = useState<string | null>(null);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [aboutSections, setAboutSections] = useState({ storage: false, backup: false, export: false });
@@ -203,12 +208,6 @@ function App() {
   const [selectedEntry, setSelectedEntry] = useState<JournalEntry | null>(null);
   const [editingEntryId, setEditingEntryId] = useState<number | null>(null);
   const [confirmDeleteEntry, setConfirmDeleteEntry] = useState(false);
-  const [showAllFields, setShowAllFields] = useState(false);
-  const [showAllFoodTags, setShowAllFoodTags] = useState(false);
-  const [showAllActivityTags, setShowAllActivityTags] = useState(false);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [hunger, setHunger] = useState<number | undefined>(undefined);
-  const [mood, setMood] = useState('');
 
   const [searchText, setSearchText] = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -542,235 +541,36 @@ function App() {
       : new Date(`${chartSelection}-01T12:00:00`).toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' }).replace(' г.', '')
     : '';
 
-  const formatDate = (date: string) => {
-    return new Date(`${date}T12:00:00`).toLocaleDateString('ru-RU', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-    });
-  };
-
   return (
     <div className="app">
       {selectedEntry ? (
-        <>
-          <header className="editor-header">
-            <button className="back-button" onClick={handleInAppBack} aria-label="Назад"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5M5 12l7-7M5 12l7 7" /></svg></button>
-            <h1>Запись</h1>
-          </header>
-          <main className="editor-main">
-            <section className="editor-card entry-detail-card">
-              <p className="muted entry-detail-date">{formatDate(selectedEntry.date)} · {selectedEntry.time}</p>
-              <div className="entry-detail-row">
-                <h2>Еда</h2>
-                <p>{selectedEntry.food}</p>
-              </div>
-              {selectedEntry.tags.length > 0 && (
-                <div className="entry-detail-row">
-                  <h2>Тип еды</h2>
-                  <div className="journal-entry-tags">{mealTagsFirst(selectedEntry.tags).map((tag) => <span className="tag" key={tag}><TagGlyph name={tagIcons[tag] || defaultTagIcon(tag)} size={13} />{tag}</span>)}</div>
-                </div>
-              )}
-              {selectedEntry.carbs !== null && (
-                <div className="entry-detail-row">
-                  <h2>Углеводы</h2>
-                  <p>{selectedEntry.carbs} г</p>
-                </div>
-              )}
-              {selectedEntry.activity.length > 0 && (
-                <div className="entry-detail-row">
-                  <h2>Активность</h2>
-                  <div className="journal-entry-tags">{selectedEntry.activity.map((tag) => <span className="tag activity-tag" key={tag}><TagGlyph name={tagIcons[tag] || defaultTagIcon(tag)} size={13} />{tag}</span>)}</div>
-                </div>
-              )}
-              {selectedEntry.hunger !== undefined && (
-                <div className="entry-detail-row">
-                  <h2>Уровень голода</h2>
-                  <p>{selectedEntry.hunger} из 5</p>
-                </div>
-              )}
-              {selectedEntry.mood && (
-                <div className="entry-detail-row">
-                  <h2>Настроение</h2>
-                  <p>{selectedEntry.mood}</p>
-                </div>
-              )}
-              {selectedEntry.comment && (
-                <div className="entry-detail-row">
-                  <h2>Комментарий</h2>
-                  <p>{selectedEntry.comment}</p>
-                </div>
-              )}
-            </section>
-            <div className="entry-actions">
-              <button className="save-button" onClick={() => startEditingEntry(selectedEntry)}>Изменить запись</button>
-              {!confirmDeleteEntry ? (
-                <button className="delete-entry-button" onClick={() => setConfirmDeleteEntry(true)}>Удалить запись</button>
-              ) : (
-                <div className="delete-entry-confirm">
-                  <p>Удалить эту запись? Это действие нельзя отменить.</p>
-                  <div>
-                    <button className="delete-entry-button" onClick={deleteSelectedEntry}>Удалить</button>
-                    <button className="cancel-delete-button" onClick={() => setConfirmDeleteEntry(false)}>Отмена</button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </main>
-        </>
+        <EntryDetailPage
+          entry={selectedEntry}
+          tagIcons={tagIcons}
+          confirmDelete={confirmDeleteEntry}
+          setConfirmDelete={setConfirmDeleteEntry}
+          onBack={handleInAppBack}
+          onEdit={() => startEditingEntry(selectedEntry)}
+          onDelete={deleteSelectedEntry}
+        />
       ) : editorOpen ? (
-        <>
-          <header className="editor-header">
-            <button className="back-button" onClick={handleInAppBack} aria-label="Назад"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5M5 12l7-7M5 12l7 7" /></svg></button>
-            <h1>{editingEntryId !== null ? 'Изменить запись' : 'Новая запись'}</h1>
-          </header>
-
-          <main className="editor-main">
-            <section className="editor-card">
-              <div className="date-time-row">
-                <label className="field-label">
-                  Дата
-                  <input type="date" value={entryDate} onChange={(event) => setEntryDate(event.target.value)} />
-                </label>
-                <label className="field-label">
-                  Время
-                  <input type="time" value={entryTime} onChange={(event) => setEntryTime(event.target.value)} />
-                </label>
-              </div>
-            </section>
-
-            <section className="editor-card">
-              <label className="field-label">
-                Еда
-                <textarea
-                  rows={3}
-                  value={entryFood}
-                  onChange={(event) => setEntryFood(event.target.value)}
-                  placeholder="Какая была еда и какая была порция? Например: 150 г, тарелка, 2 кусочка"
-                />
-              </label>
-            </section>
-
-            <section className="editor-card">
-              <div className="editor-section-title">Тип еды</div>
-              <div className="tag-gallery">
-                {(showAllFoodTags ? editorFoodTags : editorFoodTags.slice(0, 4)).map((tag) => (
-                  <button
-                    key={tag}
-                    className={`choice-tag ${selectedTags.includes(tag) ? 'chosen' : ''}`}
-                    onClick={() => toggleTag(tag)}
-                  >
-                    <TagGlyph name={tagIcons[tag] || defaultTagIcon(tag)} size={15} />
-                    <span>{tag}</span>
-                  </button>
-                ))}
-              </div>
-              <button
-                className="show-tags"
-                onClick={() => setShowAllFoodTags(!showAllFoodTags)}
-              >
-                {showAllFoodTags ? 'Скрыть теги' : 'Показать все теги'}
-              </button>
-            </section>
-
-            <section className="editor-card">
-              <div className="editor-section-title">Углеводы</div>
-              <div className="field-with-unit">
-                <input type="number" min="0" placeholder="0" value={entryCarbs} onChange={(event) => setEntryCarbs(event.target.value)} />
-                <span>г</span>
-              </div>
-            </section>
-
-            <section className="editor-card">
-              <div className="editor-section-title">Активность</div>
-              <div className="tag-gallery">
-                {(showAllActivityTags ? editorActivityTags : editorActivityTags.slice(0, 4)).map((tag) => (
-                  <button
-                    key={tag}
-                    className={`choice-tag ${selectedTags.includes(tag) ? 'chosen' : ''}`}
-                    onClick={() => toggleTag(tag)}
-                  >
-                    <TagGlyph name={tagIcons[tag] || defaultTagIcon(tag)} size={15} />
-                    <span>{tag}</span>
-                  </button>
-                ))}
-              </div>
-              <button
-                className="show-tags"
-                onClick={() => setShowAllActivityTags(!showAllActivityTags)}
-              >
-                {showAllActivityTags ? 'Скрыть теги' : 'Показать все теги'}
-              </button>
-            </section>
-
-            <button
-              className="expand-fields"
-              onClick={() => setShowAllFields(!showAllFields)}
-            >
-              {showAllFields ? 'Скрыть дополнительные поля' : '＋ Показать все поля'}
-            </button>
-
-            {showAllFields && (
-              <>
-                <section className="editor-card">
-                  <div className="editor-section-title">Уровень голода</div>
-                  <p className="field-hint">
-                    1 — не очень голоден, а 5 — очень голоден
-                  </p>
-                  <div className="hunger-options" role="group" aria-label="Уровень голода">
-                    {[1, 2, 3, 4, 5].map((number) => (
-                      <button
-                        type="button"
-                        key={number}
-                        className={`hunger-option ${hunger === number ? 'chosen' : ''}`}
-                        aria-pressed={hunger === number}
-                        onClick={() => setHunger((current) => current === number ? undefined : number)}
-                      >
-                        {number}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="hunger-status">
-                    {hunger === undefined ? 'Не указан' : `Выбрано: ${hunger}. Нажми ещё раз, чтобы отменить.`}
-                  </p>
-                </section>
-
-                <section className="editor-card">
-                  <div className="editor-section-title">Комментарий</div>
-                  <label className="field-label">
-                    <textarea rows={3} value={entryComment} onChange={(event) => setEntryComment(event.target.value)} placeholder="Дополнительные заметки к записи" />
-                  </label>
-                </section>
-                <section className="editor-card">
-                  <div className="editor-section-title">Настроение</div>
-                  <div className="mood-gallery">
-                    {['Отличное', 'Хорошее', 'Нейтральное', 'Грустное', 'Плохое'].map((item, index) => (
-                      <button
-                        key={item}
-                        className={`mood-option ${mood === item ? 'chosen' : ''}`}
-                        onClick={() => setMood(item)}
-                      >
-                        <span>{['☺', '🙂', '😐', '🙁', '☹'][index]}</span>
-                        <small>{item}</small>
-                      </button>
-                    ))}
-                  </div>
-                </section>
-              </>
-            )}
-
-            <button className="save-button" onClick={saveEntry} disabled={!entryFood.trim()}>
-              {editingEntryId !== null ? 'Сохранить изменения' : 'Сохранить запись'}
-            </button>
-          </main>
-        </>
+        <EntryEditorPage
+          draft={draft}
+          isEditing={editingEntryId !== null}
+          foodTags={editorFoodTags}
+          activityTags={editorActivityTags}
+          tagIcons={tagIcons}
+          onToggleTag={toggleTag}
+          onBack={handleInAppBack}
+          onSave={saveEntry}
+        />
       ) : (
         <>
           <header className="topbar">
             <div>
               <div className={settingsPage ? "settings-title-row" : ""}>
                 {settingsPage && (
-                  <button className="back-button settings-back" onClick={handleInAppBack} aria-label="Назад"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5M5 12l7-7M5 12l7 7" /></svg></button>
+                  <BackButton className="settings-back" onClick={handleInAppBack} />
                 )}
                 <h1>{settingsPage || 'Дневник питания'}</h1>
               </div>
@@ -1026,7 +826,7 @@ function App() {
                   {groupedEntries.length > 0 ? (
                     groupedEntries.map((group) => (
                       <section className="journal-day" key={group.date}>
-                        <h3>{formatDate(group.date)}</h3>
+                        <h3>{formatEntryDate(group.date)}</h3>
                         {group.entries.map((entry) => (
                           <article className="journal-entry" key={entry.id} onClick={() => setSelectedEntry(entry)} role="button" tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') setSelectedEntry(entry); }}>
                             <span className="journal-time">{entry.time}</span>

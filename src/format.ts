@@ -42,3 +42,11 @@ export const journalPeriods: JournalPeriod[] = [
   'Последние 30 дней',
   'Произвольный период',
 ];
+
+// "суббота, 14 ноября" — heading for a day of entries.
+export const formatEntryDate = (date: string) =>
+  new Date(`${date}T12:00:00`).toLocaleDateString('ru-RU', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
