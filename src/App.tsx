@@ -263,6 +263,7 @@ const journalPeriods: JournalPeriod[] = [
 
 function App() {
   const [period, setPeriod] = useState<Period>('Месяц');
+  const [chartOffset, setChartOffset] = useState(0);
   const [analyticsPeriod, setAnalyticsPeriod] = useState<'Месяц' | 'Произвольный период'>('Месяц');
   const [showAllAnalyticsCategories, setShowAllAnalyticsCategories] = useState(false);
   const [analyticsFrom, setAnalyticsFrom] = useState(() => { const d = new Date(); d.setDate(1); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`; });
@@ -874,14 +875,24 @@ function App() {
 
   const toDateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   const countForDate = (dateKey: string) => journalEntries.filter((entry) => entry.date === dateKey).length;
+  // 0 = current month/year, -1 = previous one, and so on. Not saved between launches.
+  const earliestEntryDate = journalEntries.reduce<string | null>((min, entry) => (!min || entry.date < min ? entry.date : min), null);
+  const earliestYear = earliestEntryDate ? Number(earliestEntryDate.slice(0, 4)) : today.getFullYear();
+  const earliestMonth = earliestEntryDate ? Number(earliestEntryDate.slice(5, 7)) - 1 : today.getMonth();
+  const minChartOffset = period === 'Месяц'
+    ? Math.min(0, (earliestYear - today.getFullYear()) * 12 + (earliestMonth - today.getMonth()))
+    : Math.min(0, earliestYear - today.getFullYear());
+  const safeChartOffset = Math.max(minChartOffset, Math.min(0, chartOffset));
+  const chartMonthStart = new Date(today.getFullYear(), today.getMonth() + safeChartOffset, 1);
+  const chartYear = today.getFullYear() + safeChartOffset;
   const chartData = period === 'Месяц'
-    ? Array.from({ length: new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate() }, (_, index) => {
-        const date = new Date(today.getFullYear(), today.getMonth(), index + 1);
+    ? Array.from({ length: new Date(chartMonthStart.getFullYear(), chartMonthStart.getMonth() + 1, 0).getDate() }, (_, index) => {
+        const date = new Date(chartMonthStart.getFullYear(), chartMonthStart.getMonth(), index + 1);
         return { label: String(index + 1), date: date.toLocaleDateString('ru-RU', { weekday: 'short' }).replace('.', ''), count: countForDate(toDateKey(date)) };
       })
-    : Array.from({ length: 12 }, (_, index) => ({ label: new Date(today.getFullYear(), index, 1).toLocaleDateString('ru-RU', { month: 'short' }).replace('.', ''), date: '', count: journalEntries.filter((entry) => entry.date.startsWith(`${today.getFullYear()}-${String(index + 1).padStart(2, '0')}`)).length }));
+    : Array.from({ length: 12 }, (_, index) => ({ label: new Date(chartYear, index, 1).toLocaleDateString('ru-RU', { month: 'short' }).replace('.', ''), date: '', count: journalEntries.filter((entry) => entry.date.startsWith(`${chartYear}-${String(index + 1).padStart(2, '0')}`)).length }));
   const chartTotal = chartData.reduce((sum, item) => sum + item.count, 0);
-  const chartTitle = period === 'Месяц' ? today.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' }) : `${today.getFullYear()} год`;
+  const chartTitle = period === 'Месяц' ? chartMonthStart.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' }) : `${chartYear} год`;
 
   const chartVisible = !selectedEntry && !editorOpen && !settingsPage;
   const todayDayOfMonth = today.getDate();
@@ -894,7 +905,9 @@ function App() {
       const dayWidth = 36;
       // Instant, not smooth: on phones a smooth scroll can be interrupted
       // while the screen is still being laid out after returning to it.
-      chart.scrollTo({ left: Math.max(0, (todayDayOfMonth - 1) * dayWidth), behavior: 'instant' });
+      // Current month: today near the left edge; past months: from day 1.
+      const targetDay = safeChartOffset === 0 ? todayDayOfMonth : 1;
+      chart.scrollTo({ left: Math.max(0, (targetDay - 1) * dayWidth), behavior: 'instant' });
     };
     scrollToToday();
     const frame = window.requestAnimationFrame(scrollToToday);
@@ -903,7 +916,7 @@ function App() {
       window.cancelAnimationFrame(frame);
       window.clearTimeout(timer);
     };
-  }, [period, chartVisible, todayDayOfMonth]);
+  }, [period, chartVisible, todayDayOfMonth, safeChartOffset]);
 
   const analyticsStart = analyticsPeriod === 'Месяц'
     ? new Date(today.getFullYear(), today.getMonth(), 1)
@@ -1640,7 +1653,7 @@ function App() {
                     <button
                       key={item}
                       className={period === item ? 'period active' : 'period'}
-                      onClick={() => setPeriod(item)}
+                      onClick={() => { setPeriod(item); setChartOffset(0); }}
                     >
                       {item}
                     </button>
@@ -1650,8 +1663,15 @@ function App() {
                 <section className="chart-card">
                   <div className="section-heading">
                     <div>
-                      <p className="muted">Количество записей</p>
-                      <h2>{chartTitle}</h2>
+                      <p className="muted chart-caption">
+                        Количество записей
+                        {safeChartOffset !== 0 && <button type="button" className="chart-today-button" onClick={() => setChartOffset(0)}>К текущему</button>}
+                      </p>
+                      <div className="chart-nav">
+                        <button type="button" aria-label={period === 'Месяц' ? 'Предыдущий месяц' : 'Предыдущий год'} disabled={safeChartOffset <= minChartOffset} onClick={() => setChartOffset(safeChartOffset - 1)}>‹</button>
+                        <h2>{chartTitle}</h2>
+                        <button type="button" aria-label={period === 'Месяц' ? 'Следующий месяц' : 'Следующий год'} disabled={safeChartOffset >= 0} onClick={() => setChartOffset(safeChartOffset + 1)}>›</button>
+                      </div>
                     </div>
                     <span className="total">{chartTotal} записей</span>
                   </div>

@@ -1487,3 +1487,12 @@ body[data-theme="dark"] .orphan-tag { border-color: #4a5443; background: #292f27
 body[data-theme="dark"] .orphan-tag-title strong { color: #dce5d2; }
 body[data-theme="dark"] .orphan-tag-actions button, body[data-theme="dark"] .orphan-tag-replace select { border-color: #414a3b; background: #343c30; color: #d0ddc2; }
 body[data-theme="dark"] .orphan-tag-actions button.primary { border-color: #71885d; background: #71885d; color: #fff; }
+
+.chart-caption { display: flex; align-items: center; gap: 8px; min-height: 28px; }
+.chart-today-button { min-height: 28px; padding: 0 10px; border: 1px solid #d6dccb; border-radius: 999px; background: #fff; color: #5f7350; font: inherit; font-size: 12px; font-weight: 600; }
+.chart-nav { display: flex; align-items: center; gap: 4px; margin-left: -8px; }
+.chart-nav h2 { margin: 0; }
+.chart-nav button { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: #5f7350; font-size: 24px; line-height: 1; }
+.chart-nav button:disabled { opacity: .25; }
+body[data-theme="dark"] .chart-today-button { border-color: #4a5443; background: #343c30; color: #c1d1ae; }
+body[data-theme="dark"] .chart-nav button { color: #c1d1ae; }
