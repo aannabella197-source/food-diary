@@ -260,6 +260,12 @@ const formatEntryCount = (count: number) => {
   return `${count} ${word}`;
 };
 
+const pluralDays = (count: number) => {
+  const lastTwo = count % 100;
+  const last = count % 10;
+  return lastTwo >= 11 && lastTwo <= 14 ? 'дней' : last === 1 ? 'день' : last >= 2 && last <= 4 ? 'дня' : 'дней';
+};
+
 const journalPeriods: JournalPeriod[] = [
   'Все записи',
   'Сегодня',
@@ -272,6 +278,9 @@ const journalPeriods: JournalPeriod[] = [
 function App() {
   const [period, setPeriod] = useState<Period>('Месяц');
   const [chartOffset, setChartOffset] = useState(0);
+  // A day (YYYY-MM-DD) or month (YYYY-MM) picked on the chart to narrow the list below.
+  const [chartSelection, setChartSelection] = useState<string | null>(null);
+  const toggleChartSelection = (key: string) => setChartSelection((current) => current === key ? null : key);
   const [analyticsPeriod, setAnalyticsPeriod] = useState<'Месяц' | 'Произвольный период'>('Месяц');
   const [showAllAnalyticsCategories, setShowAllAnalyticsCategories] = useState(false);
   const [analyticsFrom, setAnalyticsFrom] = useState(() => { const d = new Date(); d.setDate(1); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`; });
@@ -390,6 +399,29 @@ function App() {
     }
   };
 
+  const BACKUP_REMINDER_DAYS = 7;
+  const [backupReminderSnoozedUntil, setBackupReminderSnoozedUntil] = useState(() => {
+    try {
+      return Number(localStorage.getItem('food-diary-backup-reminder-snoozed-until')) || 0;
+    } catch {
+      return 0;
+    }
+  });
+  const [reminderNow] = useState(() => Date.now());
+  const daysSinceBackup = backupInfo ? Math.floor((reminderNow - new Date(backupInfo.createdAt).getTime()) / 86400000) : null;
+  const backupReminderVisible = journalEntries.length > 0 &&
+    (daysSinceBackup === null || daysSinceBackup >= BACKUP_REMINDER_DAYS) &&
+    reminderNow >= backupReminderSnoozedUntil;
+  const snoozeBackupReminder = () => {
+    const until = reminderNow + 3 * 86400000;
+    setBackupReminderSnoozedUntil(until);
+    try {
+      localStorage.setItem('food-diary-backup-reminder-snoozed-until', String(until));
+    } catch {
+      // not critical: the reminder simply shows again next time
+    }
+  };
+
   const createBackup = () => {
     const createdAt = new Date().toISOString();
     const backup = {
@@ -462,14 +494,18 @@ function App() {
 
   const getExportFileDate = () => exportDateKey(new Date());
 
-  const exportCsv = () => {
-    if (exportEntries.length === 0 || exportFormat !== 'CSV (.csv)') return;
+  const buildCsvBlob = () => {
     const escapeCell = (value: string | number) => {
       const cell = String(value);
       return /[;"\r\n]/.test(cell) ? '"' + cell.replace(/"/g, '""') + '"' : cell;
     };
     const csv = getExportRows().map((row) => row.map(escapeCell).join(';')).join('\r\n');
-    const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8;' });
+    return new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8;' });
+  };
+
+  const exportCsv = () => {
+    if (exportEntries.length === 0 || exportFormat !== 'CSV (.csv)') return;
+    const blob = buildCsvBlob();
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -480,8 +516,7 @@ function App() {
     URL.revokeObjectURL(url);
   };
 
-  const exportExcel = () => {
-    if (exportEntries.length === 0 || exportFormat !== 'Excel (.xlsx)') return;
+  const buildExcelWorkbook = () => {
     const rows = getExportRows();
     const worksheet = XLSX.utils.aoa_to_sheet(rows);
     worksheet['!cols'] = rows[0].map((header) => ({
@@ -489,7 +524,39 @@ function App() {
     }));
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Дневник питания');
-    XLSX.writeFile(workbook, 'food-diary-export-' + getExportFileDate() + '.xlsx');
+    return workbook;
+  };
+
+  const exportExcel = () => {
+    if (exportEntries.length === 0 || exportFormat !== 'Excel (.xlsx)') return;
+    XLSX.writeFile(buildExcelWorkbook(), 'food-diary-export-' + getExportFileDate() + '.xlsx');
+  };
+
+  // Sharing files through the Android share menu. Browsers decide which file
+  // types may be shared, so support is checked for the chosen format.
+  const XLSX_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  const exportFileName = 'food-diary-export-' + getExportFileDate() + (exportFormat === 'CSV (.csv)' ? '.csv' : '.xlsx');
+  const exportFileType = exportFormat === 'CSV (.csv)' ? 'text/csv' : XLSX_TYPE;
+  const canShareExport = (() => {
+    try {
+      return typeof navigator.canShare === 'function' &&
+        navigator.canShare({ files: [new File([''], exportFileName, { type: exportFileType })] });
+    } catch {
+      return false;
+    }
+  })();
+  const shareExport = async () => {
+    if (exportEntries.length === 0) return;
+    const blob = exportFormat === 'CSV (.csv)'
+      ? buildCsvBlob()
+      : new Blob([XLSX.write(buildExcelWorkbook(), { bookType: 'xlsx', type: 'array' })], { type: XLSX_TYPE });
+    const file = new File([blob], exportFileName, { type: exportFileType });
+    try {
+      await navigator.share({ files: [file], title: 'Дневник питания' });
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      window.alert('Не удалось открыть меню «Поделиться». Можно скачать файл кнопкой «Экспортировать».');
+    }
   };
   const currentTags = tagCategory === 'food' ? foodTags : activityTags;
   const setCurrentTags = tagCategory === 'food' ? setFoodTags : setActivityTags;
@@ -853,6 +920,10 @@ function App() {
         if (dateTo && entry.date > dateTo) return false;
       }
 
+      if (chartSelection && !entry.date.startsWith(chartSelection)) {
+        return false;
+      }
+
       if (filterTags.length > 0) {
         const allEntryTags = [...entry.tags, ...entry.activity];
         if (!filterTags.some((tag) => allEntryTags.includes(tag))) {
@@ -896,9 +967,9 @@ function App() {
   const chartData = period === 'Месяц'
     ? Array.from({ length: new Date(chartMonthStart.getFullYear(), chartMonthStart.getMonth() + 1, 0).getDate() }, (_, index) => {
         const date = new Date(chartMonthStart.getFullYear(), chartMonthStart.getMonth(), index + 1);
-        return { label: String(index + 1), date: date.toLocaleDateString('ru-RU', { weekday: 'short' }).replace('.', ''), count: countForDate(toDateKey(date)) };
+        return { key: toDateKey(date), label: String(index + 1), date: date.toLocaleDateString('ru-RU', { weekday: 'short' }).replace('.', ''), count: countForDate(toDateKey(date)) };
       })
-    : Array.from({ length: 12 }, (_, index) => ({ label: new Date(chartYear, index, 1).toLocaleDateString('ru-RU', { month: 'short' }).replace('.', ''), date: '', count: journalEntries.filter((entry) => entry.date.startsWith(`${chartYear}-${String(index + 1).padStart(2, '0')}`)).length }));
+    : Array.from({ length: 12 }, (_, index) => ({ key: `${chartYear}-${String(index + 1).padStart(2, '0')}`, label: new Date(chartYear, index, 1).toLocaleDateString('ru-RU', { month: 'short' }).replace('.', ''), date: '', count: journalEntries.filter((entry) => entry.date.startsWith(`${chartYear}-${String(index + 1).padStart(2, '0')}`)).length }));
   const chartTotal = chartData.reduce((sum, item) => sum + item.count, 0);
   const chartTitle = period === 'Месяц' ? chartMonthStart.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' }) : `${chartYear} год`;
 
@@ -974,6 +1045,12 @@ function App() {
         `В дневнике есть записи за ${loggedDays.size} из ${analyticsDays} дней выбранного периода.`,
         `По сравнению с предыдущим равным периодом количество записей изменилось на ${formatChange(entryChange)}.`,
       ];
+
+  const chartSelectionLabel = chartSelection
+    ? chartSelection.length === 10
+      ? new Date(`${chartSelection}T12:00:00`).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', ...(chartSelection.startsWith(String(today.getFullYear())) ? {} : { year: 'numeric' }) })
+      : new Date(`${chartSelection}-01T12:00:00`).toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' }).replace(' г.', '')
+    : '';
 
   const formatDate = (date: string) => {
     return new Date(`${date}T12:00:00`).toLocaleDateString('ru-RU', {
@@ -1529,7 +1606,10 @@ function App() {
                   <div><span>Записей для экспорта</span><strong>{exportEntries.length}</strong></div>
                   <p>В файл попадут записи за выбранный период и только отмеченные дополнительные поля.</p>
                 </div>
-                <button className="export-button" onClick={exportFormat === 'CSV (.csv)' ? exportCsv : exportExcel} disabled={exportEntries.length === 0}>Экспортировать {exportFormat === 'CSV (.csv)' ? 'CSV' : 'Excel'}-файл</button>
+                <div className="export-buttons">
+                  <button className="export-button" onClick={exportFormat === 'CSV (.csv)' ? exportCsv : exportExcel} disabled={exportEntries.length === 0}>Экспортировать {exportFormat === 'CSV (.csv)' ? 'CSV' : 'Excel'}-файл</button>
+                  {canShareExport && <button className="export-button secondary" onClick={() => void shareExport()} disabled={exportEntries.length === 0}>Поделиться</button>}
+                </div>
                 <p className="export-note">{exportEntries.length === 0 ? 'За выбранный период записей нет.' : exportFormat === 'CSV (.csv)' ? 'Файл CSV сохранится на устройство. Его можно открыть в Excel. Для Google Таблиц на телефоне лучше выбрать формат Excel.' : 'Файл Excel сохранится на устройство. Его можно открыть в Excel или Google Таблицах.'}</p>
               </section>
             )}
@@ -1650,6 +1730,15 @@ function App() {
 
             {!settingsPage && (
               <>
+                {backupReminderVisible && (
+                  <section className="backup-reminder">
+                    <p>{daysSinceBackup === null ? 'Резервная копия ещё не создавалась.' : `Последняя резервная копия — ${daysSinceBackup} ${pluralDays(daysSinceBackup)} назад.`} Записи хранятся только на этом устройстве.</p>
+                    <div>
+                      <button type="button" className="primary" onClick={createBackup}>Создать копию</button>
+                      <button type="button" onClick={snoozeBackupReminder}>Позже</button>
+                    </div>
+                  </section>
+                )}
                 {storageWarningVisible && (
                   <section className="storage-warning" role="alert">
                     <p>Не удалось прочитать часть сохранённых данных. Повреждённые данные не удалены: их копия оставлена в браузере. Если у тебя есть резервная копия, её можно восстановить в разделе «Резервное копирование».</p>
@@ -1661,7 +1750,7 @@ function App() {
                     <button
                       key={item}
                       className={period === item ? 'period active' : 'period'}
-                      onClick={() => { setPeriod(item); setChartOffset(0); }}
+                      onClick={() => { setPeriod(item); setChartOffset(0); setChartSelection(null); }}
                     >
                       {item}
                     </button>
@@ -1685,7 +1774,16 @@ function App() {
                   </div>
                   <div ref={chartScrollRef} className={`chart ${period === 'Месяц' ? 'month-chart' : 'year-chart'}`}>
                     {chartData.map((item, index) => (
-                      <div className="chart-column" key={`${period}-${item.label}-${index}`}>
+                      <div
+                        className={`chart-column${chartSelection === item.key ? ' selected' : ''}`}
+                        key={`${period}-${item.label}-${index}`}
+                        role="button"
+                        tabIndex={0}
+                        aria-pressed={chartSelection === item.key}
+                        aria-label={`Показать записи: ${item.key}`}
+                        onClick={() => toggleChartSelection(item.key)}
+                        onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggleChartSelection(item.key); } }}
+                      >
                         <span className="bar-count">{item.count}</span>
                         <div className="bar-area">
                           <div
@@ -1797,6 +1895,11 @@ function App() {
                 )}
 
                 <div className="journal-results">
+                  {chartSelection && (
+                    <button type="button" className="chart-selection-chip" onClick={() => setChartSelection(null)} aria-label="Снять отбор по графику">
+                      <span>Записи за {chartSelectionLabel}</span><span aria-hidden="true">×</span>
+                    </button>
+                  )}
                   <div className="journal-results-heading">
                     <div>
                       <h2>Все записи</h2>

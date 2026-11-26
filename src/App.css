@@ -1496,3 +1496,27 @@ body[data-theme="dark"] .orphan-tag-actions button.primary { border-color: #7188
 .chart-nav button:disabled { opacity: .25; }
 body[data-theme="dark"] .chart-today-button { border-color: #4a5443; background: #343c30; color: #c1d1ae; }
 body[data-theme="dark"] .chart-nav button { color: #c1d1ae; }
+
+.export-buttons { display: grid; gap: 10px; }
+.export-button.secondary { border: 1px solid #82976c; background: #fff; color: #5f7350; }
+body[data-theme="dark"] .export-button.secondary { border-color: #91a77a; background: #292f27; color: #c1d1ae; }
+.backup-reminder { display: grid; gap: 10px; margin-bottom: 14px; padding: 14px 16px; border: 1px solid #d6dccb; border-radius: 15px; background: #fff; color: #4c5844; }
+.backup-reminder p { margin: 0; font-size: 14px; line-height: 1.45; }
+.backup-reminder div { display: flex; flex-wrap: wrap; gap: 8px; }
+.backup-reminder button { min-height: 40px; padding: 0 16px; border: 1px solid #d6dccb; border-radius: 999px; background: #fff; color: #5f7350; font: inherit; font-weight: 600; }
+.backup-reminder button.primary { border-color: #82976c; background: #82976c; color: #fff; }
+body[data-theme="dark"] .backup-reminder { border-color: #414a3b; background: #292f27; color: #dce5d2; }
+body[data-theme="dark"] .backup-reminder button { border-color: #4a5443; background: #343c30; color: #d0ddc2; }
+body[data-theme="dark"] .backup-reminder button.primary { border-color: #71885d; background: #71885d; color: #fff; }
+
+.chart-column { cursor: pointer; border-radius: 10px; -webkit-tap-highlight-color: transparent; }
+.chart-column.selected { background: #eef2e6; }
+.chart-column.selected .bar { background: #68734b; }
+.chart-column.selected .bar.empty { background: #c9d0b4; }
+.chart-column.selected .bar-day { color: #3f4a37; font-weight: 700; }
+body[data-theme="dark"] .chart-column.selected { background: #343c30; }
+body[data-theme="dark"] .chart-column.selected .bar { background: #b9cea3; }
+body[data-theme="dark"] .chart-column.selected .bar-day { color: #edf4e6; }
+.chart-selection-chip { display: inline-flex; align-items: center; gap: 10px; min-height: 36px; margin-bottom: 10px; padding: 0 14px; border: 1px solid #82976c; border-radius: 999px; background: #e8eddf; color: #4f6140; font: inherit; font-size: 14px; font-weight: 600; }
+.chart-selection-chip span:last-child { font-size: 18px; line-height: 1; }
+body[data-theme="dark"] .chart-selection-chip { border-color: #91a77a; background: #46553b; color: #edf4e6; }
