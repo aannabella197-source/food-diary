@@ -252,6 +252,14 @@ const monthStartKey = () => {
   return localDateKey(date);
 };
 
+// "1 запись", "2 записи", "5 записей", "21 запись", "11 записей".
+const formatEntryCount = (count: number) => {
+  const lastTwo = count % 100;
+  const last = count % 10;
+  const word = lastTwo >= 11 && lastTwo <= 14 ? 'записей' : last === 1 ? 'запись' : last >= 2 && last <= 4 ? 'записи' : 'записей';
+  return `${count} ${word}`;
+};
+
 const journalPeriods: JournalPeriod[] = [
   'Все записи',
   'Сегодня',
@@ -1673,7 +1681,7 @@ function App() {
                         <button type="button" aria-label={period === 'Месяц' ? 'Следующий месяц' : 'Следующий год'} disabled={safeChartOffset >= 0} onClick={() => setChartOffset(safeChartOffset + 1)}>›</button>
                       </div>
                     </div>
-                    <span className="total">{chartTotal} записей</span>
+                    <span className="total">{formatEntryCount(chartTotal)}</span>
                   </div>
                   <div ref={chartScrollRef} className={`chart ${period === 'Месяц' ? 'month-chart' : 'year-chart'}`}>
                     {chartData.map((item, index) => (
@@ -1792,7 +1800,7 @@ function App() {
                   <div className="journal-results-heading">
                     <div>
                       <h2>Все записи</h2>
-                      <span className="muted">{filteredEntries.length} записей</span>
+                      <span className="muted">{formatEntryCount(filteredEntries.length)}</span>
                     </div>
                     <button
                       className="delete-all-entries-button"
