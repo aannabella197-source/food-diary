@@ -3,9 +3,9 @@ import { useEffect, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
 import type { LucideProps } from 'lucide-react';
 import {
-  Apple, Beef, Bike, Brush, Briefcase, CakeSlice, Carrot, Cherry, Coffee, CupSoda,
+  Apple, Beef, Bike, Briefcase, CakeSlice, Carrot, Cherry, Coffee, Cookie, Croissant, CupSoda,
   Dumbbell, Fish, Footprints, GlassWater, GripVertical, Heart, House, Milk, MoonStar, Nut,
-  Salad, Soup, Sofa, Sunrise, Tag, Utensils, Wheat, WheatOff,
+  Pill, Salad, Soup, Sofa, Sunrise, Tag, Utensils, Wheat, WheatOff, Wine,
 } from 'lucide-react';
 import './App.css';
 
@@ -22,14 +22,19 @@ type JournalPeriod =
 
 const tagIconOptions = [
   { value: 'utensils', label: 'Еда', Icon: Utensils },
-  { value: 'coffee', label: 'Кофе', Icon: Coffee },
+  { value: 'coffee', label: 'Чашка', Icon: Coffee },
+  { value: 'coffee-bean', label: 'Кофе', Icon: CoffeeBeanIcon },
   { value: 'apple', label: 'Фрукты', Icon: Apple },
   { value: 'salad', label: 'Салат', Icon: Salad },
   { value: 'soup', label: 'Суп', Icon: Soup },
   { value: 'fish', label: 'Рыба', Icon: Fish },
   { value: 'glass-water', label: 'Вода', Icon: GlassWater },
   { value: 'cup-soda', label: 'Напиток', Icon: CupSoda },
+  { value: 'smoothie', label: 'Смузи', Icon: SmoothieIcon },
+  { value: 'wine', label: 'Вино', Icon: Wine },
   { value: 'cake-slice', label: 'Десерт', Icon: CakeSlice },
+  { value: 'cookie', label: 'Печенье', Icon: Cookie },
+  { value: 'croissant', label: 'Выпечка', Icon: Croissant },
   { value: 'wheat', label: 'Злаки', Icon: Wheat },
   { value: 'milk', label: 'Молочное', Icon: Milk },
   { value: 'carrot', label: 'Морковь', Icon: Carrot },
@@ -40,7 +45,8 @@ const tagIconOptions = [
   { value: 'beef', label: 'Мясное', Icon: Beef },
   { value: 'nut', label: 'Орехи', Icon: Nut },
   { value: 'cherry', label: 'Вишни', Icon: Cherry },
-  { value: 'broom', label: 'Веник', Icon: Brush },
+  { value: 'broom', label: 'Метла', Icon: BroomIcon },
+  { value: 'pill', label: 'Таблетка', Icon: Pill },
   { value: 'dumbbell', label: 'Тренировка', Icon: Dumbbell },
   { value: 'footprints', label: 'Прогулка', Icon: Footprints },
   { value: 'bike', label: 'Велосипед', Icon: Bike },
@@ -61,17 +67,97 @@ function TomatoIcon({ size = 16, strokeWidth = 1.8 }: LucideProps) {
   </svg>;
 }
 
+function CoffeeBeanIcon({ size = 16, strokeWidth = 1.8 }: LucideProps) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1" />
+    <ellipse cx="10" cy="4.2" rx="1.7" ry="2.5" transform="rotate(25 10 4.2)" />
+    <path d="M9.3 6c.1-1.2 1.4-2.3 1.5-3.6" />
+  </svg>;
+}
+
+function SmoothieIcon({ size = 16, strokeWidth = 1.8 }: LucideProps) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M5 9h14l-1.5 11.2a1 1 0 0 1-1 .8h-9a1 1 0 0 1-1-.8z" />
+    <path d="M14 9l1.5-6.5H18" />
+    <path d="M12 12.6c-2.3 0-3.4 1.2-3.1 2.7.3 1.8 1.8 3.3 3.1 3.9 1.3-.6 2.8-2.1 3.1-3.9.3-1.5-.8-2.7-3.1-2.7z" />
+    <path d="M10.4 12.7 12 11.4l1.6 1.3" />
+    <path d="M11 14.9h.01M13 14.9h.01M12 16.6h.01" />
+  </svg>;
+}
+
+function BroomIcon({ size = 16, strokeWidth = 1.8 }: LucideProps) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <g transform="rotate(35 12 12)">
+      <path d="M12 1.5v8" />
+      <path d="M9.5 9.5h5v2.5h-5z" />
+      <path d="M9.5 12 6.5 21.5h11L14.5 12" />
+      <path d="M10.6 15 9.5 21.5M12 15v6.5M13.4 15l1.1 6.5" />
+    </g>
+  </svg>;
+}
+
+// Icons used for tags that have no icon chosen by the user.
+const defaultTagIcons: Record<string, string> = {
+  'завтрак': 'breakfast',
+  'обед': 'soup',
+  'ужин': 'dinner',
+  'перекус': 'cookie',
+  'фрукты': 'apple',
+  'десерт': 'cake-slice',
+  'овощи': 'tomato',
+  'мучное': 'croissant',
+  'крупы': 'wheat',
+  'без глютена': 'wheat-off',
+  'молочное': 'milk',
+  'мясное': 'beef',
+  'рыба': 'fish',
+  'ягоды': 'cherry',
+  'вишни': 'cherry',
+  'орехи': 'nut',
+  'таблетки': 'pill',
+  'вода': 'glass-water',
+  'безалкогольные напитки': 'cup-soda',
+  'чай': 'coffee',
+  'кофе': 'coffee-bean',
+  'смузи': 'smoothie',
+  'алкогольные напитки': 'wine',
+  'прогулка': 'footprints',
+  'домашние дела': 'broom',
+  'тренировка': 'dumbbell',
+  'отдых': 'sofa',
+  'работа': 'briefcase',
+};
+
 function defaultTagIcon(tag: string) {
-  const normalized = tag.trim().toLocaleLowerCase('ru');
-  if (normalized === 'завтрак') return 'breakfast';
-  if (normalized === 'ужин') return 'dinner';
-  if (normalized === 'овощи') return 'tomato';
-  if (normalized === 'без глютена') return 'wheat-off';
-  if (normalized === 'мясное') return 'beef';
-  if (normalized === 'орехи') return 'nut';
-  if (normalized === 'вишни') return 'cherry';
-  if (normalized === 'домашние дела') return 'broom';
-  return 'tag';
+  return defaultTagIcons[tag.trim().toLocaleLowerCase('ru')] || 'tag';
+}
+
+// One-time update (November 2026): give some existing tags their new icons,
+// but only where the tag still has the old icon, so manual choices are kept.
+const ICON_UPDATE_KEY = 'food-diary-icon-update-1';
+const iconUpdates: { tag: string; from: string; to: string }[] = [
+  { tag: 'перекус', from: 'utensils', to: 'cookie' },
+  { tag: 'мучное', from: 'wheat', to: 'croissant' },
+  { tag: 'безалкогольные напитки', from: 'glass-water', to: 'cup-soda' },
+  { tag: 'смузи', from: 'glass-water', to: 'smoothie' },
+  { tag: 'алкогольные напитки', from: 'glass-water', to: 'wine' },
+  { tag: 'кофе', from: 'coffee', to: 'coffee-bean' },
+  { tag: 'таблетки', from: 'heart', to: 'pill' },
+];
+
+function applyIconUpdate(icons: Record<string, string>) {
+  try {
+    if (localStorage.getItem(ICON_UPDATE_KEY)) return icons;
+    localStorage.setItem(ICON_UPDATE_KEY, 'done');
+  } catch {
+    return icons;
+  }
+  const next = { ...icons };
+  for (const [tag, icon] of Object.entries(icons)) {
+    const update = iconUpdates.find((item) => item.tag === tag.trim().toLocaleLowerCase('ru'));
+    if (update && icon === update.from) next[tag] = update.to;
+  }
+  return next;
 }
 
 function TagGlyph({ name, size = 16 }: { name: string; size?: number }) {
@@ -183,7 +269,7 @@ function App() {
   const [editingTag, setEditingTag] = useState<string | null>(null);
   const [tagDraft, setTagDraft] = useState('');
   const [tagIcon, setTagIcon] = useState('tag');
-  const [tagIcons, setTagIcons] = useState<Record<string, string>>(() => loadStored('food-diary-tag-icons', {}, isTagIconMap));
+  const [tagIcons, setTagIcons] = useState<Record<string, string>>(() => applyIconUpdate(loadStored('food-diary-tag-icons', {}, isTagIconMap)));
   const [deleteTag, setDeleteTag] = useState<string | null>(null);
   const [draggedTag, setDraggedTag] = useState<string | null>(null);
   const [dragOverTag, setDragOverTag] = useState<string | null>(null);
@@ -385,6 +471,14 @@ function App() {
     if (currentTags.some((tag) => tag.toLowerCase() === name.toLowerCase() && tag !== editingTag)) return;
     if (!editingTag && currentTags.length >= 30) return;
     if (editingTag) {
+      if (editingTag !== name) {
+        const oldName = editingTag;
+        const field = tagCategory === 'food' ? 'tags' : 'activity';
+        const rename = (items: string[]) => Array.from(new Set(items.map((tag) => tag === oldName ? name : tag)));
+        setJournalEntries((entries) => entries.map((entry) =>
+          entry[field].includes(oldName) ? { ...entry, [field]: rename(entry[field]) } : entry));
+        setFilterTags(rename);
+      }
       setCurrentTags((items) => items.map((tag) => tag === editingTag ? name : tag));
       setCurrentDisabled((items) => items.map((tag) => tag === editingTag ? name : tag));
       setTagIcons((items) => {
@@ -400,6 +494,9 @@ function App() {
     setEditingTag(null);
     setTagDraft('');
   };
+  const renameEntryCount = editingTag
+    ? journalEntries.filter((entry) => (tagCategory === 'food' ? entry.tags : entry.activity).includes(editingTag)).length
+    : 0;
   const reorderTag = (sourceTag: string, targetTag: string) => {
     if (sourceTag === targetTag) return;
     setCurrentTags((items) => {
@@ -413,16 +510,6 @@ function App() {
     });
   };
 
-  const moveTag = (tag: string, direction: -1 | 1) => {
-    const index = currentTags.indexOf(tag);
-    const nextIndex = index + direction;
-    if (nextIndex < 0 || nextIndex >= currentTags.length) return;
-    setCurrentTags((items) => {
-      const next = [...items];
-      [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
-      return next;
-    });
-  };
   const removeTag = (tag: string) => {
     setCurrentTags((items) => items.filter((item) => item !== tag));
     setCurrentDisabled((items) => items.filter((item) => item !== tag));
@@ -1148,6 +1235,9 @@ function App() {
                     <label>Название тега
                       <input value={tagDraft} maxLength={30} onChange={(event) => setTagDraft(event.target.value)} placeholder="Например, Салат" />
                     </label>
+                    {editingTag && tagDraft.trim() && tagDraft.trim() !== editingTag && renameEntryCount > 0 && (
+                      <span className="tag-rename-note">Название изменится и в записях дневника: {renameEntryCount}</span>
+                    )}
                     <span className="muted">Выбери значок</span>
                     <div className="tag-icon-picker">
                       {tagIconOptions.map(({ value, label }) => (
@@ -1175,9 +1265,9 @@ function App() {
                     </div>
                   </div>
                 )}
-                <p className="tag-management-hint">На компьютере перетаскивай тег мышью. На телефоне удерживай значок с точками и перемещай тег. Стрелки тоже можно использовать.</p>
+                <p className="tag-management-hint">На компьютере перетаскивай тег мышью. На телефоне удерживай значок с точками и перемещай тег.</p>
                 <div className="managed-tag-list">
-                  {currentTags.map((tag, index) => (
+                  {currentTags.map((tag) => (
                     <div
                       className={`managed-tag${currentDisabled.includes(tag) ? ' disabled' : ''}${draggedTag === tag ? ' dragging' : ''}${dragOverTag === tag && draggedTag !== tag ? ' drag-over' : ''}`}
                       key={tag}
@@ -1217,8 +1307,6 @@ function App() {
                       <span className="managed-tag-name">{tag}</span>
                       {currentDisabled.includes(tag) && <small>Отключён</small>}
                       <div className="managed-tag-actions">
-                        <button aria-label="Выше" disabled={index === 0} onClick={() => moveTag(tag, -1)}>↑</button>
-                        <button aria-label="Ниже" disabled={index === currentTags.length - 1} onClick={() => moveTag(tag, 1)}>↓</button>
                         <button aria-label="Изменить" onClick={() => { setEditingTag(tag); setTagDraft(tag); setTagIcon(tagIcons[tag] || defaultTagIcon(tag)); setTagEditorOpen(true); }}>✎</button>
                         <button aria-label={currentDisabled.includes(tag) ? 'Включить' : 'Отключить'} onClick={() => setCurrentDisabled((items) => items.includes(tag) ? items.filter((item) => item !== tag) : [...items, tag])}>{currentDisabled.includes(tag) ? '✓' : 'Ⅱ'}</button>
                         <button aria-label="Удалить" onClick={() => setDeleteTag(tag)}>×</button>

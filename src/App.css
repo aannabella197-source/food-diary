@@ -1448,3 +1448,6 @@ body[data-theme="dark"] .storage-warning button { border-color: #7d6a40; backgro
 }
 body[data-theme="dark"] .hunger-option { border-color: #414a3b; background: #343c30; color: #d0ddc2; }
 body[data-theme="dark"] .hunger-option.chosen { border-color: #91a77a; background: #46553b; color: #edf4e6; }
+
+.tag-rename-note { color: #69775e; font-size: 13px; }
+body[data-theme="dark"] .tag-rename-note { color: #b2bea7; }
