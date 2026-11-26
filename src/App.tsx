@@ -28,7 +28,7 @@ import { useAndroidBack } from './useAndroidBack';
 import { downloadBackup, parseBackup } from './backup';
 import { filterJournalEntries, groupEntriesByDate } from './journalFilter';
 import { buildChart, formatChartSelection } from './chartData';
-import { monthStartKey, todayKey } from './format';
+import { formatWeight, monthStartKey, parseWeight, todayKey } from './format';
 
 function App() {
   const [period, setPeriod] = useState<Period>('Месяц');
@@ -43,7 +43,7 @@ function App() {
   // Fields of the entry being added or edited.
   const draft = useEntryDraft();
   const {
-    entryDate, setEntryDate, entryTime, setEntryTime, entryFood, setEntryFood, entryCarbs, setEntryCarbs, entryComment, setEntryComment, setShowAllFields, setShowAllFoodTags, setShowAllActivityTags, selectedTags, setSelectedTags, hunger, setHunger, mood, setMood,
+    entryDate, setEntryDate, entryTime, setEntryTime, entryFood, setEntryFood, entryCarbs, setEntryCarbs, entryComment, setEntryComment, setShowAllFields, setShowAllFoodTags, setShowAllActivityTags, selectedTags, setSelectedTags, hunger, setHunger, mood, setMood, entryWeight, setEntryWeight,
   } = draft;
   const [settingsPage, setSettingsPage] = useState<string | null>(null);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
@@ -205,6 +205,7 @@ function App() {
     setShowAllActivityTags(false);
     setHunger(undefined);
     setMood('');
+    setEntryWeight('');
     setEditorOpen(true);
   };
 
@@ -221,6 +222,7 @@ function App() {
     setShowAllActivityTags(true);
     setHunger(entry.hunger);
     setMood(entry.mood ?? '');
+    setEntryWeight(entry.weight === undefined ? '' : formatWeight(entry.weight));
     setConfirmDeleteEntry(false);
     setSelectedEntry(null);
     setEditorOpen(true);
@@ -237,6 +239,8 @@ function App() {
 
   const saveEntry = () => {
     if (!entryFood.trim()) return;
+    const weight = parseWeight(entryWeight);
+    if (entryWeight.trim() && weight === null) return;
     const nextEntry: JournalEntry = {
       id: editingEntryId ?? Date.now(), date: entryDate, time: entryTime, food: entryFood.trim(),
       tags: selectedTags.filter((tag) => foodTags.includes(tag)),
@@ -245,6 +249,7 @@ function App() {
       comment: entryComment.trim(),
       hunger,
       mood,
+      ...(weight !== null ? { weight } : {}),
     };
     if (editingEntryId !== null) {
       setJournalEntries((current) => current.map((entry) => entry.id === editingEntryId ? nextEntry : entry));

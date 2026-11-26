@@ -1,5 +1,5 @@
 import type { JournalEntry } from '../types';
-import { formatEntryDate, mealTagsFirst } from '../format';
+import { formatEntryDate, formatWeight, mealTagsFirst } from '../format';
 import { defaultTagIcon } from '../tagIcons';
 import { TagGlyph } from '../components/TagGlyph';
 import { BackButton } from '../components/BackButton';
@@ -46,6 +46,12 @@ export function EntryDetailPage({ entry, tagIcons, confirmDelete, setConfirmDele
               <div className="journal-entry-tags">{entry.activity.map((tag) => <span className="tag activity-tag" key={tag}><TagGlyph name={tagIcons[tag] || defaultTagIcon(tag)} size={13} />{tag}</span>)}</div>
             </div>
           )}
+          {entry.comment && (
+            <div className="entry-detail-row">
+              <h2>Комментарий</h2>
+              <p>{entry.comment}</p>
+            </div>
+          )}
           {entry.hunger !== undefined && (
             <div className="entry-detail-row">
               <h2>Уровень голода</h2>
@@ -58,10 +64,10 @@ export function EntryDetailPage({ entry, tagIcons, confirmDelete, setConfirmDele
               <p>{entry.mood}</p>
             </div>
           )}
-          {entry.comment && (
+          {entry.weight !== undefined && (
             <div className="entry-detail-row">
-              <h2>Комментарий</h2>
-              <p>{entry.comment}</p>
+              <h2>Вес тела</h2>
+              <p>{formatWeight(entry.weight)} кг</p>
             </div>
           )}
         </section>

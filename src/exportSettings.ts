@@ -12,9 +12,10 @@ export function useExportSettings() {
   const [includeTags, setIncludeTags] = useState(true);
   const [includeCarbs, setIncludeCarbs] = useState(true);
   const [includeHunger, setIncludeHunger] = useState(true);
+  const [includeWeight, setIncludeWeight] = useState(true);
   return {
     exportFormat, setExportFormat, exportPeriod, setExportPeriod, exportFrom, setExportFrom, exportTo, setExportTo,
-    includeTags, setIncludeTags, includeCarbs, setIncludeCarbs, includeHunger, setIncludeHunger,
+    includeTags, setIncludeTags, includeCarbs, setIncludeCarbs, includeHunger, setIncludeHunger, includeWeight, setIncludeWeight,
   };
 }
 

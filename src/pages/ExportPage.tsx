@@ -10,7 +10,7 @@ type Props = {
 export function ExportPage({ entries, settings }: Props) {
   const {
     exportFormat, setExportFormat, exportPeriod, setExportPeriod, exportFrom, setExportFrom, exportTo, setExportTo,
-    includeTags, setIncludeTags, includeCarbs, setIncludeCarbs, includeHunger, setIncludeHunger,
+    includeTags, setIncludeTags, includeCarbs, setIncludeCarbs, includeHunger, setIncludeHunger, includeWeight, setIncludeWeight,
   } = settings;
 
   const exportDateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -41,11 +41,13 @@ export function ExportPage({ entries, settings }: Props) {
     if (includeTags) headers.push('Теги еды', 'Активность');
     if (includeCarbs) headers.push('Углеводы (г)', 'Комментарий');
     if (includeHunger) headers.push('Уровень голода', 'Настроение');
+    if (includeWeight) headers.push('Вес тела (кг)');
     const rows = exportEntries.map((entry) => {
       const row: (string | number)[] = [entry.date, entry.time, entry.food];
       if (includeTags) row.push(entry.tags.join(', '), entry.activity.join(', '));
       if (includeCarbs) row.push(entry.carbs ?? '', entry.comment || '');
       if (includeHunger) row.push(entry.hunger ?? '', entry.mood || '');
+      if (includeWeight) row.push(entry.weight ?? '');
       return row;
     });
     return [headers, ...rows];
@@ -55,7 +57,8 @@ export function ExportPage({ entries, settings }: Props) {
 
   const buildCsvBlob = () => {
     const escapeCell = (value: string | number) => {
-      const cell = String(value);
+      // Numbers use a decimal comma, as Russian Excel expects in CSV files.
+      const cell = typeof value === 'number' ? String(value).replace('.', ',') : String(value);
       return /[;"\r\n]/.test(cell) ? '"' + cell.replace(/"/g, '""') + '"' : cell;
     };
     const csv = getExportRows().map((row) => row.map(escapeCell).join(';')).join('\r\n');
@@ -149,6 +152,7 @@ export function ExportPage({ entries, settings }: Props) {
           <button className="export-included" onClick={() => setIncludeTags(!includeTags)}><span className={includeTags ? 'export-check checked' : 'export-check'}>{includeTags ? '✓' : ''}</span><span><strong>Теги и активность</strong><small>Категории и выбранные отметки</small></span></button>
           <button className="export-included" onClick={() => setIncludeCarbs(!includeCarbs)}><span className={includeCarbs ? 'export-check checked' : 'export-check'}>{includeCarbs ? '✓' : ''}</span><span><strong>Углеводы и комментарии</strong><small>Количество углеводов и заметки</small></span></button>
           <button className="export-included" onClick={() => setIncludeHunger(!includeHunger)}><span className={includeHunger ? 'export-check checked' : 'export-check'}>{includeHunger ? '✓' : ''}</span><span><strong>Голод и настроение</strong><small>Дополнительные поля записи</small></span></button>
+          <button className="export-included" onClick={() => setIncludeWeight(!includeWeight)}><span className={includeWeight ? 'export-check checked' : 'export-check'}>{includeWeight ? '✓' : ''}</span><span><strong>Вес тела</strong><small>Если он указан в записи</small></span></button>
         </div>
       </div>
       <div className="export-preview">

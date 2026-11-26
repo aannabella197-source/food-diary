@@ -13,8 +13,9 @@ export function useEntryDraft() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [hunger, setHunger] = useState<number | undefined>(undefined);
   const [mood, setMood] = useState('');
+  const [entryWeight, setEntryWeight] = useState('');
   return {
-    entryDate, setEntryDate, entryTime, setEntryTime, entryFood, setEntryFood, entryCarbs, setEntryCarbs, entryComment, setEntryComment, showAllFields, setShowAllFields, showAllFoodTags, setShowAllFoodTags, showAllActivityTags, setShowAllActivityTags, selectedTags, setSelectedTags, hunger, setHunger, mood, setMood,
+    entryDate, setEntryDate, entryTime, setEntryTime, entryFood, setEntryFood, entryCarbs, setEntryCarbs, entryComment, setEntryComment, showAllFields, setShowAllFields, showAllFoodTags, setShowAllFoodTags, showAllActivityTags, setShowAllActivityTags, selectedTags, setSelectedTags, hunger, setHunger, mood, setMood, entryWeight, setEntryWeight,
   };
 }
 

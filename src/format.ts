@@ -50,3 +50,12 @@ export const formatEntryDate = (date: string) =>
     day: 'numeric',
     month: 'long',
   });
+
+// Weight typed by the user ("63,5" or "63.5") -> number, or null when empty/invalid.
+export const parseWeight = (text: string) => {
+  const value = Number(text.trim().replace(',', '.'));
+  return text.trim() && Number.isFinite(value) && value > 0 && value < 1000 ? Math.round(value * 10) / 10 : null;
+};
+
+// 63.5 -> "63,5"
+export const formatWeight = (value: number) => String(Math.round(value * 10) / 10).replace('.', ',');

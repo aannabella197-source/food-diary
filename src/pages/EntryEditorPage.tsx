@@ -1,5 +1,6 @@
 import type { EntryDraft } from '../entryDraft';
 import { defaultTagIcon } from '../tagIcons';
+import { parseWeight } from '../format';
 import { TagGlyph } from '../components/TagGlyph';
 import { BackButton } from '../components/BackButton';
 
@@ -16,8 +17,9 @@ type Props = {
 
 export function EntryEditorPage({ draft, isEditing, foodTags, activityTags, tagIcons, onToggleTag, onBack, onSave }: Props) {
   const {
-    entryDate, setEntryDate, entryTime, setEntryTime, entryFood, setEntryFood, entryCarbs, setEntryCarbs, entryComment, setEntryComment, showAllFields, setShowAllFields, showAllFoodTags, setShowAllFoodTags, showAllActivityTags, setShowAllActivityTags, selectedTags, hunger, setHunger, mood, setMood,
+    entryDate, setEntryDate, entryTime, setEntryTime, entryFood, setEntryFood, entryCarbs, setEntryCarbs, entryComment, setEntryComment, showAllFields, setShowAllFields, showAllFoodTags, setShowAllFoodTags, showAllActivityTags, setShowAllActivityTags, selectedTags, hunger, setHunger, mood, setMood, entryWeight, setEntryWeight,
   } = draft;
+  const weightInvalid = entryWeight.trim() !== '' && parseWeight(entryWeight) === null;
   return (
     <>
       <header className="editor-header">
@@ -113,6 +115,13 @@ export function EntryEditorPage({ draft, isEditing, foodTags, activityTags, tagI
         {showAllFields && (
           <>
             <section className="editor-card">
+              <div className="editor-section-title">Комментарий</div>
+              <label className="field-label">
+                <textarea rows={3} value={entryComment} onChange={(event) => setEntryComment(event.target.value)} placeholder="Дополнительные заметки к записи" />
+              </label>
+            </section>
+
+            <section className="editor-card">
               <div className="editor-section-title">Уровень голода</div>
               <p className="field-hint">
                 1 — не очень голоден, а 5 — очень голоден
@@ -136,12 +145,6 @@ export function EntryEditorPage({ draft, isEditing, foodTags, activityTags, tagI
             </section>
 
             <section className="editor-card">
-              <div className="editor-section-title">Комментарий</div>
-              <label className="field-label">
-                <textarea rows={3} value={entryComment} onChange={(event) => setEntryComment(event.target.value)} placeholder="Дополнительные заметки к записи" />
-              </label>
-            </section>
-            <section className="editor-card">
               <div className="editor-section-title">Настроение</div>
               <div className="mood-gallery">
                 {['Отличное', 'Хорошее', 'Нейтральное', 'Грустное', 'Плохое'].map((item, index) => (
@@ -156,10 +159,19 @@ export function EntryEditorPage({ draft, isEditing, foodTags, activityTags, tagI
                 ))}
               </div>
             </section>
+
+            <section className="editor-card">
+              <div className="editor-section-title">Вес тела</div>
+              <div className="field-with-unit">
+                <input type="text" inputMode="decimal" placeholder="Например, 63,5" value={entryWeight} onChange={(event) => setEntryWeight(event.target.value)} aria-invalid={weightInvalid} />
+                <span>кг</span>
+              </div>
+              {weightInvalid && <p className="field-error">Введи вес числом, например 63,5</p>}
+            </section>
           </>
         )}
 
-        <button className="save-button" onClick={onSave} disabled={!entryFood.trim()}>
+        <button className="save-button" onClick={onSave} disabled={!entryFood.trim() || weightInvalid}>
           {isEditing ? 'Сохранить изменения' : 'Сохранить запись'}
         </button>
       </main>

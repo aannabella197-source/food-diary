@@ -1,6 +1,6 @@
 import type { JournalEntry } from '../types';
 import type { AnalyticsSettings } from '../analyticsSettings';
-import { localDateKey as toDateKey } from '../format';
+import { formatWeight, localDateKey as toDateKey } from '../format';
 import { defaultTagIcon } from '../tagIcons';
 import { TagGlyph } from '../components/TagGlyph';
 
@@ -73,6 +73,15 @@ export function AnalyticsPage({ entries, foodTags, disabledFoodTags, tagIcons, s
   // "в 1 записи", "в 2 записях", "в 21 записи", "в 11 записях".
   const inEntriesWord = (count: number) => count % 10 === 1 && count % 100 !== 11 ? 'записи' : 'записях';
 
+  // Weight: median and range over the period, only from entries where it was entered.
+  const weights = analyticsEntries.flatMap((entry) => typeof entry.weight === 'number' ? [entry.weight] : []).sort((a, b) => a - b);
+  const medianWeight = weights.length
+    ? (weights.length % 2 ? weights[(weights.length - 1) / 2] : (weights[weights.length / 2 - 1] + weights[weights.length / 2]) / 2)
+    : 0;
+  const weightObservation = weights.length >= 2
+    ? `Вес указан в ${weights.length} ${inEntriesWord(weights.length)}: медианный — ${formatWeight(medianWeight)} кг, колебания от ${formatWeight(weights[0])} до ${formatWeight(weights[weights.length - 1])} кг (разница ${formatWeight(weights[weights.length - 1] - weights[0])} кг).`
+    : null;
+
   // Observations are shown only when the period has enough entries to be meaningful.
   const MIN_ENTRIES_FOR_OBSERVATIONS = 5;
   const analyticsObservations = analyticsEntries.length < MIN_ENTRIES_FOR_OBSERVATIONS
@@ -84,6 +93,7 @@ export function AnalyticsPage({ entries, foodTags, disabledFoodTags, tagIcons, s
         ...(hungerEntries.length >= MIN_MARKED_ENTRIES
           ? [`Средний уровень голода — ${averageHunger.toFixed(1).replace('.', ',')} из 5 (указан в ${hungerEntries.length} ${inEntriesWord(hungerEntries.length)}).`]
           : []),
+        ...(weightObservation ? [weightObservation] : []),
         ...(topMood
           ? [`Чаще всего отмечено настроение «${topMood[0]}» — в ${topMood[1]} ${inEntriesWord(topMood[1])} из ${moodEntries.length}, где оно указано.`]
           : []),

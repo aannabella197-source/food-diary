@@ -21,4 +21,6 @@ export type JournalEntry = {
   comment: string;
   hunger?: number;
   mood?: string;
+  // Body weight in kg, optional.
+  weight?: number;
 };
