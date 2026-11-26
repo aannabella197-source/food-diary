@@ -207,6 +207,16 @@ const isJournalEntryList = (value: unknown): value is JournalEntry[] =>
 const isTagIconMap = (value: unknown): value is Record<string, string> =>
   !!value && typeof value === 'object' && !Array.isArray(value);
 
+// Version of the data format kept in localStorage. Any future change to how
+// entries or settings are stored must migrate data from older versions.
+const STORAGE_VERSION_KEY = 'food-diary-storage-version';
+const STORAGE_VERSION = 1;
+try {
+  if (!localStorage.getItem(STORAGE_VERSION_KEY)) localStorage.setItem(STORAGE_VERSION_KEY, String(STORAGE_VERSION));
+} catch {
+  // storage unavailable; the app still works with defaults
+}
+
 // Keys whose saved data could not be read on this launch.
 const damagedStorageKeys = new Set<string>();
 
@@ -1511,7 +1521,7 @@ function App() {
             {settingsPage === 'О приложении' && (
               <section className="settings-page about-page">
                 <div className="about-hero">
-                  <div className="about-app-icon">Д</div>
+                  <img className="about-app-icon" src={`${import.meta.env.BASE_URL}app-icon.svg`} alt="" />
                   <h2>Дневник питания</h2>
                   <p>Личный дневник для наблюдения за питанием и повседневными привычками.</p>
                 </div>

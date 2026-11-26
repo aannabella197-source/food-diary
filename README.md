@@ -1,75 +1,45 @@
-# React + TypeScript + Vite
+# Дневник питания
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Личное веб-приложение для записи приёмов пищи и наблюдения за пищевыми привычками.
+Работает в браузере и устанавливается на Android как приложение (PWA). Язык интерфейса — русский.
 
-Currently, two official plugins are available:
+Приложение: https://aannabella197-source.github.io/food-diary/
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Дневник не является медицинским приложением и не делает медицинских выводов.
 
-## React Compiler
+## Возможности
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- записи: дата, время, еда, теги еды и активности, углеводы, комментарий, уровень голода, настроение;
+- поиск и фильтры по периоду и тегам;
+- график «Динамика» за месяц и год;
+- аналитика за месяц или произвольный период;
+- управление тегами и их иконками, перетаскивание, отключение, теги из старых записей;
+- светлая, тёмная и системная тема;
+- экспорт в Excel (.xlsx) и CSV;
+- резервная копия в JSON и восстановление из неё;
+- работа без интернета и поддержка системной кнопки «Назад» на Android.
 
-## Expanding the ESLint configuration
+## Как устроено
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- React 19, TypeScript, Vite.
+- Основная логика и экраны — `src/App.tsx`, стили — `src/App.css`.
+- Офлайн-режим — `public/sw.js`, настройки установки — `public/manifest.webmanifest`.
+- Данные хранятся только на устройстве, в `localStorage` браузера (ключи начинаются с `food-diary-`).
+  Синхронизации между устройствами нет: для переноса и защиты данных используется резервная копия.
+- Ключ `food-diary-storage-version` хранит версию формата данных. При изменении формата записей
+  или настроек нужно добавить перенос (миграцию) старых данных, а не менять ключи без него.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Разработка
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm install
+npm run dev     # локальный запуск
+npm run build   # проверка типов и сборка
+npm run lint    # проверка кода
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+## Публикация
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
-```
+Каждое изменение в ветке `main` автоматически собирается и публикуется на GitHub Pages
+(`.github/workflows/deploy.yml`). Изменение считается опубликованным, когда сборка в GitHub Actions
+завершилась со статусом «success».
