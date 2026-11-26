@@ -1345,7 +1345,7 @@ body[data-theme="dark"] .more-menu-button { background: transparent; color: #d0d
 .year-chart .chart-column { min-width: 0; flex: 1 1 0; }
 .year-chart .bar { width: min(19px, 85%); }
 .year-chart .bar-day { font-size: 10px; }
-.analytics-page { gap: 28px; }
+.analytics-page { display: grid; gap: 28px; }
 .analytics-period, .analytics-section {
   padding: 16px;
   border: 1px solid #e7eadf;
