@@ -2,8 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import './App.css';
 import type { JournalEntry, JournalPeriod, Period, Theme } from './types';
-import { applyIconUpdate, defaultTagIcon } from './tagIcons';
-import { TagGlyph } from './components/TagGlyph';
+import { applyIconUpdate } from './tagIcons';
 import {
   damagedStorageKeys, defaultActivityTags, defaultFoodTags, isJournalEntryList, isStringArray, isTagIconMap, loadStored,
 } from './storage';
@@ -16,15 +15,19 @@ import { AnalyticsPage } from './pages/AnalyticsPage';
 import { TagManagementPage } from './pages/TagManagementPage';
 import { useTagManagementState } from './tagManagementState';
 import { useAnalyticsSettings } from './analyticsSettings';
-import { formatEntryDate } from './format';
-import { BackButton } from './components/BackButton';
+import { TopBar } from './components/TopBar';
+import { BackupReminder } from './components/BackupReminder';
+import { StorageWarning } from './components/StorageWarning';
+import { DynamicsChart } from './components/DynamicsChart';
+import { JournalFilters } from './components/JournalFilters';
+import { JournalList } from './components/JournalList';
 import { EntryDetailPage } from './pages/EntryDetailPage';
 import { EntryEditorPage } from './pages/EntryEditorPage';
 import { useEntryDraft } from './entryDraft';
 import { useAndroidBack } from './useAndroidBack';
 import { filterJournalEntries, groupEntriesByDate } from './journalFilter';
 import { buildChart, formatChartSelection } from './chartData';
-import { formatEntryCount, journalPeriods, mealTagsFirst, monthStartKey, pluralDays, todayKey } from './format';
+import { monthStartKey, todayKey } from './format';
 
 function App() {
   const [period, setPeriod] = useState<Period>('Месяц');
@@ -414,35 +417,16 @@ function App() {
         />
       ) : (
         <>
-          <header className="topbar">
-            <div>
-              <div className={settingsPage ? "settings-title-row" : ""}>
-                {settingsPage && (
-                  <BackButton className="settings-back" onClick={handleInAppBack} />
-                )}
-                <h1>{settingsPage || 'Дневник питания'}</h1>
-              </div>
-            </div>
-            <div className="more-menu-wrap">
-              <button className="profile-mark more-menu-button" type="button" aria-label="Открыть меню разделов" aria-expanded={moreMenuOpen} onClick={() => setMoreMenuOpen((open) => !open)}>
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                  <circle cx="5" cy="12" r="1.7" />
-                  <circle cx="12" cy="12" r="1.7" />
-                  <circle cx="19" cy="12" r="1.7" />
-                </svg>
-              </button>
-              {moreMenuOpen && (
-                <div className="more-menu">
-                  {['Аналитика', 'Управление тегами', 'Резервное копирование', 'Экспорт данных', 'Оформление', 'О приложении'].map((item) => (
-                    <button type="button" key={item} onClick={() => {
-                      setSettingsPage(item);
-                      setMoreMenuOpen(false);
-                    }}>{item}</button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </header>
+          <TopBar
+            settingsPage={settingsPage}
+            menuOpen={moreMenuOpen}
+            onBack={handleInAppBack}
+            onToggleMenu={() => setMoreMenuOpen((open) => !open)}
+            onOpenPage={(page) => {
+              setSettingsPage(page);
+              setMoreMenuOpen(false);
+            }}
+          />
 
           <main>
             {settingsPage === 'Аналитика' && (
@@ -482,222 +466,49 @@ function App() {
 
             {!settingsPage && (
               <>
-                {backupReminderVisible && (
-                  <section className="backup-reminder">
-                    <p>{daysSinceBackup === null ? 'Резервная копия ещё не создавалась.' : `Последняя резервная копия — ${daysSinceBackup} ${pluralDays(daysSinceBackup)} назад.`} Записи хранятся только на этом устройстве.</p>
-                    <div>
-                      <button type="button" className="primary" onClick={createBackup}>Создать копию</button>
-                      <button type="button" onClick={snoozeBackupReminder}>Позже</button>
-                    </div>
-                  </section>
-                )}
-                {storageWarningVisible && (
-                  <section className="storage-warning" role="alert">
-                    <p>Не удалось прочитать часть сохранённых данных. Повреждённые данные не удалены: их копия оставлена в браузере. Если у тебя есть резервная копия, её можно восстановить в разделе «Резервное копирование».</p>
-                    <button type="button" onClick={() => setStorageWarningVisible(false)}>Понятно</button>
-                  </section>
-                )}
-                <section className="period-switch">
-                  {(['Месяц', 'Год'] as Period[]).map((item) => (
-                    <button
-                      key={item}
-                      className={period === item ? 'period active' : 'period'}
-                      onClick={() => { setPeriod(item); setChartOffset(0); setChartSelection(null); }}
-                    >
-                      {item}
-                    </button>
-                  ))}
-                </section>
+                {backupReminderVisible && <BackupReminder daysSinceBackup={daysSinceBackup} onCreate={createBackup} onSnooze={snoozeBackupReminder} />}
+                {storageWarningVisible && <StorageWarning onClose={() => setStorageWarningVisible(false)} />}
+                <DynamicsChart
+                  period={period}
+                  onPeriodChange={(item) => { setPeriod(item); setChartOffset(0); setChartSelection(null); }}
+                  safeChartOffset={safeChartOffset}
+                  minChartOffset={minChartOffset}
+                  onOffsetChange={setChartOffset}
+                  chartTitle={chartTitle}
+                  chartTotal={chartTotal}
+                  chartData={chartData}
+                  scrollRef={chartScrollRef}
+                  chartSelection={chartSelection}
+                  onToggleSelection={toggleChartSelection}
+                />
 
-                <section className="chart-card">
-                  <div className="section-heading">
-                    <div>
-                      <p className="muted chart-caption">
-                        Количество записей
-                        {safeChartOffset !== 0 && <button type="button" className="chart-today-button" onClick={() => setChartOffset(0)}>К текущему</button>}
-                      </p>
-                      <div className="chart-nav">
-                        <button type="button" aria-label={period === 'Месяц' ? 'Предыдущий месяц' : 'Предыдущий год'} disabled={safeChartOffset <= minChartOffset} onClick={() => setChartOffset(safeChartOffset - 1)}>‹</button>
-                        <h2>{chartTitle}</h2>
-                        <button type="button" aria-label={period === 'Месяц' ? 'Следующий месяц' : 'Следующий год'} disabled={safeChartOffset >= 0} onClick={() => setChartOffset(safeChartOffset + 1)}>›</button>
-                      </div>
-                    </div>
-                    <span className="total">{formatEntryCount(chartTotal)}</span>
-                  </div>
-                  <div ref={chartScrollRef} className={`chart ${period === 'Месяц' ? 'month-chart' : 'year-chart'}`}>
-                    {chartData.map((item, index) => (
-                      <div
-                        className={`chart-column${chartSelection === item.key ? ' selected' : ''}`}
-                        key={`${period}-${item.label}-${index}`}
-                        role="button"
-                        tabIndex={0}
-                        aria-pressed={chartSelection === item.key}
-                        aria-label={`Показать записи: ${item.key}`}
-                        onClick={() => toggleChartSelection(item.key)}
-                        onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggleChartSelection(item.key); } }}
-                      >
-                        <span className="bar-count">{item.count}</span>
-                        <div className="bar-area">
-                          <div
-                            className={`bar ${item.count === 0 ? 'empty' : ''}`}
-                            style={{ height: `${item.count === 0 ? 4 : item.count * (period === 'Год' ? 5 : 16) + 4}px` }}
-                          />
-                        </div>
-                        <span className="bar-day">{item.label}</span>
-                        {period === 'Месяц' && <span className="bar-date">{item.date}</span>}
-                      </div>
-                    ))}
-                  </div>
-                </section>
+                <JournalFilters
+                  searchText={searchText} setSearchText={setSearchText}
+                  filtersOpen={filtersOpen} setFiltersOpen={setFiltersOpen}
+                  journalPeriod={journalPeriod} setJournalPeriod={setJournalPeriod}
+                  dateFrom={dateFrom} setDateFrom={setDateFrom} dateTo={dateTo} setDateTo={setDateTo}
+                  filterTags={filterTags} toggleFilterTag={toggleFilterTag} resetFilters={resetFilters}
+                  foodTags={foodTags} disabledFoodTags={disabledFoodTags}
+                  activityTags={activityTags} disabledActivityTags={disabledActivityTags}
+                  tagIcons={tagIcons}
+                />
 
-                <div className="journal-search">
-                  <input
-                    type="search"
-                    placeholder="Поиск по еде, комментариям и тегам"
-                    value={searchText}
-                    onChange={(event) => setSearchText(event.target.value)}
-                  />
-                </div>
-
-                <button
-                  className="filter-toggle"
-                  onClick={() => setFiltersOpen(!filtersOpen)}
-                  aria-expanded={filtersOpen}
-                >
-                  <span>Фильтры</span>
-                  <span>{filterTags.length + (journalPeriod !== 'Все записи' ? 1 : 0) > 0
-                    ? `Выбрано: ${filterTags.length + (journalPeriod !== 'Все записи' ? 1 : 0)}`
-                    : ''}
-                  </span>
-                  <span>{filtersOpen ? '⌃' : '⌄'}</span>
-                </button>
-
-                {filtersOpen && (
-                  <section className="filter-panel">
-                    <div className="filter-section">
-                      <div className="filter-heading">Период</div>
-                      <div className="period-options">
-                        {journalPeriods.map((item) => (
-                          <button
-                            key={item}
-                            className={journalPeriod === item ? 'filter-option active' : 'filter-option'}
-                            onClick={() => setJournalPeriod(item)}
-                          >
-                            {item}
-                          </button>
-                        ))}
-                      </div>
-
-                      {journalPeriod === 'Произвольный период' && (
-                        <div className="date-range">
-                          <label>
-                            С даты
-                            <input
-                              type="date"
-                              value={dateFrom}
-                              onChange={(event) => setDateFrom(event.target.value)}
-                            />
-                          </label>
-                          <label>
-                            По дату
-                            <input
-                              type="date"
-                              value={dateTo}
-                              onChange={(event) => setDateTo(event.target.value)}
-                            />
-                          </label>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="filter-section">
-                      <div className="filter-heading">Тип еды</div>
-                      <div className="filter-tags">
-                        {foodTags.filter((tag) => !disabledFoodTags.includes(tag)).map((tag) => (
-                          <button
-                            key={tag}
-                            className={filterTags.includes(tag) ? 'filter-tag selected' : 'filter-tag'}
-                            onClick={() => toggleFilterTag(tag)}
-                          >
-                            <TagGlyph name={tagIcons[tag] || defaultTagIcon(tag)} size={13} />{tag}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="filter-section">
-                      <div className="filter-heading">Активность</div>
-                      <div className="filter-tags">
-                        {activityTags.filter((tag) => !disabledActivityTags.includes(tag)).map((tag) => (
-                          <button
-                            key={tag}
-                            className={filterTags.includes(tag) ? 'filter-tag selected' : 'filter-tag'}
-                            onClick={() => toggleFilterTag(tag)}
-                          >
-                            <TagGlyph name={tagIcons[tag] || defaultTagIcon(tag)} size={13} />{tag}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <button className="reset-filters" onClick={resetFilters}>
-                      Сбросить фильтры
-                    </button>
-                  </section>
-                )}
-
-                <div className="journal-results">
-                  {chartSelection && (
-                    <button type="button" className="chart-selection-chip" onClick={() => setChartSelection(null)} aria-label="Снять отбор по графику">
-                      <span>Записи за {chartSelectionLabel}</span><span aria-hidden="true">×</span>
-                    </button>
-                  )}
-                  <div className="journal-results-heading">
-                    <div>
-                      <h2>Все записи</h2>
-                      <span className="muted">{formatEntryCount(filteredEntries.length)}</span>
-                    </div>
-                    <button
-                      className="delete-all-entries-button"
-                      disabled={journalEntries.length === 0}
-                      onClick={() => {
-                        if (!window.confirm(`Удалить все записи дневника (${journalEntries.length})? Это действие нельзя отменить. Если понадобится, предварительно создай резервную копию.`)) return;
-                        setJournalEntries([]);
-                        setSelectedEntry(null);
-                        setEditingEntryId(null);
-                      }}
-                    >
-                      Удалить все
-                    </button>
-                  </div>
-
-                  {groupedEntries.length > 0 ? (
-                    groupedEntries.map((group) => (
-                      <section className="journal-day" key={group.date}>
-                        <h3>{formatEntryDate(group.date)}</h3>
-                        {group.entries.map((entry) => (
-                          <article className="journal-entry" key={entry.id} onClick={() => setSelectedEntry(entry)} role="button" tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') setSelectedEntry(entry); }}>
-                            <span className="journal-time">{entry.time}</span>
-                            <div className="journal-entry-tags">
-                              {mealTagsFirst(entry.tags).map((tag) => (
-                                <span className="tag" key={tag}><TagGlyph name={tagIcons[tag] || defaultTagIcon(tag)} size={13} />{tag}</span>
-                              ))}
-                              {entry.activity.map((tag) => (
-                                <span className="tag activity-tag" key={tag}><TagGlyph name={tagIcons[tag] || defaultTagIcon(tag)} size={13} />{tag}</span>
-                              ))}
-                            </div>
-                            <span className="entry-arrow">›</span>
-                          </article>
-                        ))}
-                      </section>
-                    ))
-                  ) : (
-                    <div className="journal-empty">
-                      <p>Записей не найдено</p>
-                      <span>Попробуй изменить поиск или фильтры</span>
-                    </div>
-                  )}
-                </div>
+                <JournalList
+                  groupedEntries={groupedEntries}
+                  filteredCount={filteredEntries.length}
+                  totalEntries={journalEntries.length}
+                  chartSelection={chartSelection}
+                  chartSelectionLabel={chartSelectionLabel}
+                  onClearChartSelection={() => setChartSelection(null)}
+                  onDeleteAll={() => {
+                    if (!window.confirm(`Удалить все записи дневника (${journalEntries.length})? Это действие нельзя отменить. Если понадобится, предварительно создай резервную копию.`)) return;
+                    setJournalEntries([]);
+                    setSelectedEntry(null);
+                    setEditingEntryId(null);
+                  }}
+                  onOpenEntry={setSelectedEntry}
+                  tagIcons={tagIcons}
+                />
               </>
             )}
 
