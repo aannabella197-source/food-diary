@@ -1,6 +1,6 @@
 
 import { useEffect, useRef, useState } from 'react';
-import * as XLSX from 'xlsx';
+import writeExcelFile from 'write-excel-file/browser';
 import type { LucideProps } from 'lucide-react';
 import {
   Apple, Beef, Bike, Briefcase, CakeSlice, Carrot, Cherry, Coffee, Cookie, Croissant, CupSoda,
@@ -516,20 +516,17 @@ function App() {
     URL.revokeObjectURL(url);
   };
 
-  const buildExcelWorkbook = () => {
-    const rows = getExportRows();
-    const worksheet = XLSX.utils.aoa_to_sheet(rows);
-    worksheet['!cols'] = rows[0].map((header) => ({
-      wch: Math.max(14, Math.min(36, String(header).length + 4)),
-    }));
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Дневник питания');
-    return workbook;
-  };
-
-  const exportExcel = () => {
+  const exportExcel = async () => {
     if (exportEntries.length === 0 || exportFormat !== 'Excel (.xlsx)') return;
-    XLSX.writeFile(buildExcelWorkbook(), 'food-diary-export-' + getExportFileDate() + '.xlsx');
+    const rows = getExportRows();
+    try {
+      await writeExcelFile(rows.map((row) => row.map((cell) => cell === '' ? null : cell)), {
+        sheet: 'Дневник питания',
+        columns: rows[0].map((header) => ({ width: Math.max(14, Math.min(36, String(header).length + 4)) })),
+      }).toFile('food-diary-export-' + getExportFileDate() + '.xlsx');
+    } catch {
+      window.alert('Не удалось создать файл Excel. Попробуй ещё раз или выбери формат CSV.');
+    }
   };
 
   // Sharing files through the Android share menu. Browsers decide which file
@@ -549,10 +546,8 @@ function App() {
     }
   })();
   const shareExport = async () => {
-    if (exportEntries.length === 0) return;
-    const blob = exportFormat === 'CSV (.csv)'
-      ? buildCsvBlob()
-      : new Blob([XLSX.write(buildExcelWorkbook(), { bookType: 'xlsx', type: 'array' })], { type: XLSX_TYPE });
+    if (exportEntries.length === 0 || exportFormat !== 'CSV (.csv)') return;
+    const blob = buildCsvBlob();
     const file = new File([blob], exportFileName, { type: exportFileType });
     try {
       await navigator.share({ files: [file], title: 'Дневник питания' });
@@ -1630,7 +1625,7 @@ function App() {
                   <p>В файл попадут записи за выбранный период и только отмеченные дополнительные поля.</p>
                 </div>
                 <div className="export-buttons">
-                  <button className="export-button" onClick={exportFormat === 'CSV (.csv)' ? exportCsv : exportExcel} disabled={exportEntries.length === 0}>Экспортировать {exportFormat === 'CSV (.csv)' ? 'CSV' : 'Excel'}-файл</button>
+                  <button className="export-button" onClick={exportFormat === 'CSV (.csv)' ? exportCsv : () => void exportExcel()} disabled={exportEntries.length === 0}>Экспортировать {exportFormat === 'CSV (.csv)' ? 'CSV' : 'Excel'}-файл</button>
                   {canShareExport && <button className="export-button secondary" onClick={() => void shareExport()} disabled={exportEntries.length === 0}>Поделиться</button>}
                 </div>
                 <p className="export-note">{exportEntries.length === 0 ? 'За выбранный период записей нет.' : exportFormat === 'CSV (.csv)' ? 'Файл CSV сохранится на устройство. Его можно открыть в Excel. Для Google Таблиц на телефоне лучше выбрать формат Excel.' : 'Файл Excel сохранится на устройство. Его можно открыть в Excel или Google Таблицах. Поделиться (например, отправить в Google Диск) можно файлом CSV.'}</p>
