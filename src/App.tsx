@@ -674,7 +674,7 @@ function App() {
   };
 
   const currentScreenKey = moreMenuOpen
-    ? 'menu'
+    ? `menu-${settingsPage ?? tab}`
     : selectedEntry
       ? `entry-${selectedEntry.id}`
       : editorOpen
@@ -682,11 +682,24 @@ function App() {
         : settingsPage
           ? `settings-${settingsPage}`
           : `tab-${tab}`;
-  const previousScreenKey = useRef(currentScreenKey);
-  const skipHistoryPush = useRef(false);
+  // How many Back presses this screen is away from the main screen.
+  // The browser history always holds exactly that many app entries above
+  // the main one, so the Android Back button never has "empty" presses.
+  const screenUnderMenuDepth = settingsPage || tab !== 'Дневник' ? 1 : 0;
+  const currentScreenDepth = moreMenuOpen
+    ? screenUnderMenuDepth + 1
+    : selectedEntry
+      ? 1
+      : editorOpen
+        ? (editingEntryId !== null ? 2 : 1)
+        : screenUnderMenuDepth;
+  const historyDepth = useRef(0);
+  const ignoreNextPop = useRef(false);
+  const fallbackBackRef = useRef(fallbackBack);
+  useEffect(() => { fallbackBackRef.current = fallbackBack; });
 
   const handleInAppBack = () => {
-    if (window.history.state?.foodDiaryApp) {
+    if (historyDepth.current > 0) {
       window.history.back();
     } else {
       fallbackBack();
@@ -694,28 +707,37 @@ function App() {
   };
 
   useEffect(() => {
-    if (!window.history.state?.foodDiaryApp) {
-      window.history.replaceState({ foodDiaryApp: true, screen: currentScreenKey }, '');
-    }
+    window.history.replaceState({ foodDiaryApp: true, depth: 0 }, '');
+    historyDepth.current = 0;
 
-    const handlePopState = () => {
-      skipHistoryPush.current = true;
-      fallbackBack();
+    const handlePopState = (event: PopStateEvent) => {
+      const depth = typeof event.state?.depth === 'number' ? event.state.depth : 0;
+      historyDepth.current = depth;
+      if (ignoreNextPop.current) {
+        ignoreNextPop.current = false;
+        return;
+      }
+      fallbackBackRef.current();
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [currentScreenKey, moreMenuOpen, selectedEntry, editorOpen, settingsPage, tab]);
+  }, []);
 
   useEffect(() => {
-    if (previousScreenKey.current !== currentScreenKey) {
-      previousScreenKey.current = currentScreenKey;
-      if (skipHistoryPush.current) {
-        skipHistoryPush.current = false;
-        return;
+    const current = historyDepth.current;
+    if (currentScreenDepth > current) {
+      for (let depth = current + 1; depth <= currentScreenDepth; depth += 1) {
+        window.history.pushState({ foodDiaryApp: true, depth }, '');
       }
-      window.history.pushState({ foodDiaryApp: true, screen: currentScreenKey }, '');
+      historyDepth.current = currentScreenDepth;
+    } else if (currentScreenDepth < current) {
+      // The app went back by itself (saved, deleted, closed the menu):
+      // drop the extra history entries without triggering another Back.
+      ignoreNextPop.current = true;
+      historyDepth.current = currentScreenDepth;
+      window.history.go(currentScreenDepth - current);
     }
-  }, [currentScreenKey]);
+  }, [currentScreenKey, currentScreenDepth]);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -817,12 +839,15 @@ function App() {
   const chartTotal = chartData.reduce((sum, item) => sum + item.count, 0);
   const chartTitle = period === 'Месяц' ? today.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' }) : `${today.getFullYear()} год`;
 
+  const chartVisible = !selectedEntry && !editorOpen && !settingsPage && tab === 'Дневник';
+  const todayDayOfMonth = today.getDate();
   useEffect(() => {
-    if (period === 'Месяц' && chartScrollRef.current) {
+    // Runs again whenever the chart reappears, so today's date is near the left edge.
+    if (chartVisible && period === 'Месяц' && chartScrollRef.current) {
       const dayWidth = 36;
-      chartScrollRef.current.scrollLeft = Math.max(0, (today.getDate() - 1) * dayWidth);
+      chartScrollRef.current.scrollLeft = Math.max(0, (todayDayOfMonth - 1) * dayWidth);
     }
-  }, [period]);
+  }, [period, chartVisible, todayDayOfMonth]);
 
   const analyticsStart = analyticsPeriod === 'Месяц'
     ? new Date(today.getFullYear(), today.getMonth(), 1)
