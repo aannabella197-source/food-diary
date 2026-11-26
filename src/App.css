@@ -1394,3 +1394,28 @@ body[data-theme="dark"] .analytics-bar-track { background: #3b4436; }
   cursor: pointer;
 }
 body[data-theme="dark"] .analytics-show-all { color: #b8cba4; }
+
+.storage-warning {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border: 1px solid #e6c98f;
+  border-radius: 15px;
+  background: #fbf3e1;
+  color: #5b4520;
+}
+.storage-warning p { margin: 0; font-size: 14px; line-height: 1.45; }
+.storage-warning button {
+  justify-self: start;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid #d9b56b;
+  border-radius: 999px;
+  background: #fff;
+  color: #5b4520;
+  font: inherit;
+  font-weight: 600;
+}
+body[data-theme="dark"] .storage-warning { border-color: #6b5a35; background: #3a3322; color: #eadbb8; }
+body[data-theme="dark"] .storage-warning button { border-color: #7d6a40; background: #2b2619; color: #eadbb8; }

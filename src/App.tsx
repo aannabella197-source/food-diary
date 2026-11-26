@@ -104,68 +104,49 @@ const defaultActivityTags = [
   'Прогулка', 'Домашние дела', 'Тренировка', 'Отдых', 'Работа',
 ];
 
-const demoJournalEntries: JournalEntry[] = [
-  {
-    id: 1,
-    date: '2026-11-24',
-    time: '08:30',
-    food: 'Овсяная каша, банан',
-    tags: ['Завтрак', 'Крупы', 'Фрукты'],
-    activity: ['Прогулка'],
-    carbs: 45,
-    comment: '',
-  },
-  {
-    id: 2,
-    date: '2026-11-24',
-    time: '12:45',
-    food: 'Рыба, рис, овощи',
-    tags: ['Обед', 'Мясное', 'Овощи'],
-    activity: ['Домашние дела'],
-    carbs: 35,
-    comment: '',
-  },
-  {
-    id: 3,
-    date: '2026-11-24',
-    time: '16:10',
-    food: 'Яблоко и орехи',
-    tags: ['Перекус', 'Фрукты', 'Орехи'],
-    activity: ['Отдых'],
-    carbs: 20,
-    comment: '',
-  },
-  {
-    id: 4,
-    date: '2026-11-23',
-    time: '08:15',
-    food: 'Яйца, хлеб, чай',
-    tags: ['Завтрак', 'Мучное', 'Чай'],
-    activity: [],
-    carbs: 30,
-    comment: '',
-  },
-  {
-    id: 5,
-    date: '2026-11-23',
-    time: '13:00',
-    food: 'Курица с картофелем',
-    tags: ['Обед', 'Мясное', 'Овощи'],
-    activity: ['Прогулка'],
-    carbs: 40,
-    comment: '',
-  },
-  {
-    id: 6,
-    date: '2026-11-23',
-    time: '19:00',
-    food: 'Гречка и овощи',
-    tags: ['Ужин', 'Крупы', 'Овощи'],
-    activity: [],
-    carbs: 38,
-    comment: '',
-  },
-];
+const isStringArray = (value: unknown): value is string[] =>
+  Array.isArray(value) && value.every((item) => typeof item === 'string');
+
+const isJournalEntryList = (value: unknown): value is JournalEntry[] =>
+  Array.isArray(value) && value.every((entry) =>
+    entry && typeof entry === 'object' &&
+    typeof (entry as JournalEntry).id === 'number' &&
+    typeof (entry as JournalEntry).date === 'string' &&
+    typeof (entry as JournalEntry).time === 'string' &&
+    typeof (entry as JournalEntry).food === 'string' &&
+    Array.isArray((entry as JournalEntry).tags) &&
+    Array.isArray((entry as JournalEntry).activity)
+  );
+
+const isTagIconMap = (value: unknown): value is Record<string, string> =>
+  !!value && typeof value === 'object' && !Array.isArray(value);
+
+// Keys whose saved data could not be read on this launch.
+const damagedStorageKeys = new Set<string>();
+
+// Reads saved data without crashing the app. If the saved value is damaged,
+// a copy of it is kept under a separate key and the fallback is used instead.
+function loadStored<T>(key: string, fallback: T, isValid: (value: unknown) => value is T): T {
+  let raw: string | null = null;
+  try {
+    raw = localStorage.getItem(key);
+    if (raw === null) return fallback;
+    const parsed: unknown = JSON.parse(raw);
+    if (isValid(parsed)) return parsed;
+  } catch {
+    // handled below
+  }
+  if (raw !== null) {
+    try {
+      localStorage.setItem(`food-diary-damaged-${key}-${new Date().toISOString()}`, raw);
+    } catch {
+      // storage may be full or unavailable; nothing more can be done here
+    }
+  }
+  damagedStorageKeys.add(key);
+  return fallback;
+}
+
 
 const journalPeriods: JournalPeriod[] = [
   'Все записи',
@@ -183,7 +164,7 @@ function App() {
   const [analyticsFrom, setAnalyticsFrom] = useState(() => { const d = new Date(); d.setDate(1); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`; });
   const [analyticsTo, setAnalyticsTo] = useState(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; });
   const chartScrollRef = useRef<HTMLDivElement>(null);
-  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>(() => { const saved = localStorage.getItem('food-diary-entries'); return saved ? JSON.parse(saved) as JournalEntry[] : demoJournalEntries; });
+  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>(() => loadStored('food-diary-entries', [], isJournalEntryList));
   const [entryDate, setEntryDate] = useState(() => { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; });
   const [entryTime, setEntryTime] = useState(() => new Date().toTimeString().slice(0, 5));
   const [entryFood, setEntryFood] = useState('');
@@ -193,16 +174,16 @@ function App() {
   const [settingsPage, setSettingsPage] = useState<string | null>(null);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [aboutSections, setAboutSections] = useState({ storage: false, backup: false, export: false });
-  const [foodTags, setFoodTags] = useState<string[]>(() => JSON.parse(localStorage.getItem('food-diary-food-tags') || 'null') || defaultFoodTags);
-  const [activityTags, setActivityTags] = useState<string[]>(() => JSON.parse(localStorage.getItem('food-diary-activity-tags') || 'null') || defaultActivityTags);
-  const [disabledFoodTags, setDisabledFoodTags] = useState<string[]>(() => JSON.parse(localStorage.getItem('food-diary-disabled-food-tags') || '[]'));
-  const [disabledActivityTags, setDisabledActivityTags] = useState<string[]>(() => JSON.parse(localStorage.getItem('food-diary-disabled-activity-tags') || '[]'));
+  const [foodTags, setFoodTags] = useState<string[]>(() => loadStored('food-diary-food-tags', defaultFoodTags, isStringArray));
+  const [activityTags, setActivityTags] = useState<string[]>(() => loadStored('food-diary-activity-tags', defaultActivityTags, isStringArray));
+  const [disabledFoodTags, setDisabledFoodTags] = useState<string[]>(() => loadStored('food-diary-disabled-food-tags', [], isStringArray));
+  const [disabledActivityTags, setDisabledActivityTags] = useState<string[]>(() => loadStored('food-diary-disabled-activity-tags', [], isStringArray));
   const [tagCategory, setTagCategory] = useState<'food' | 'activity'>('food');
   const [tagEditorOpen, setTagEditorOpen] = useState(false);
   const [editingTag, setEditingTag] = useState<string | null>(null);
   const [tagDraft, setTagDraft] = useState('');
   const [tagIcon, setTagIcon] = useState('tag');
-  const [tagIcons, setTagIcons] = useState<Record<string, string>>(() => JSON.parse(localStorage.getItem('food-diary-tag-icons') || '{}'));
+  const [tagIcons, setTagIcons] = useState<Record<string, string>>(() => loadStored('food-diary-tag-icons', {}, isTagIconMap));
   const [deleteTag, setDeleteTag] = useState<string | null>(null);
   const [draggedTag, setDraggedTag] = useState<string | null>(null);
   const [dragOverTag, setDragOverTag] = useState<string | null>(null);
@@ -213,10 +194,14 @@ function App() {
   const [includeTags, setIncludeTags] = useState(true);
   const [includeCarbs, setIncludeCarbs] = useState(true);
   const [includeHunger, setIncludeHunger] = useState(true);
-  const [backupInfo, setBackupInfo] = useState<{ createdAt: string; size: number } | null>(() => {
-    const saved = localStorage.getItem('food-diary-last-backup');
-    return saved ? JSON.parse(saved) as { createdAt: string; size: number } : null;
-  });
+  const [backupInfo, setBackupInfo] = useState<{ createdAt: string; size: number } | null>(() =>
+    loadStored('food-diary-last-backup', null, (value): value is { createdAt: string; size: number } | null =>
+      value === null || (!!value && typeof value === 'object' &&
+        typeof (value as { createdAt?: unknown }).createdAt === 'string' &&
+        typeof (value as { size?: unknown }).size === 'number')));
+  const [storageWarningVisible, setStorageWarningVisible] = useState(() =>
+    ['food-diary-entries', 'food-diary-food-tags', 'food-diary-activity-tags', 'food-diary-disabled-food-tags', 'food-diary-disabled-activity-tags', 'food-diary-tag-icons']
+      .some((key) => damagedStorageKeys.has(key)));
 
   useEffect(() => { localStorage.setItem('food-diary-entries', JSON.stringify(journalEntries)); }, [journalEntries]);
 
@@ -1418,6 +1403,12 @@ function App() {
 
             {!settingsPage && tab === 'Дневник' && (
               <>
+                {storageWarningVisible && (
+                  <section className="storage-warning" role="alert">
+                    <p>Не удалось прочитать часть сохранённых данных. Повреждённые данные не удалены: их копия оставлена в браузере. Если у тебя есть резервная копия, её можно восстановить в разделе «Резервное копирование».</p>
+                    <button type="button" onClick={() => setStorageWarningVisible(false)}>Понятно</button>
+                  </section>
+                )}
                 <section className="period-switch">
                   {(['Месяц', 'Год'] as Period[]).map((item) => (
                     <button
