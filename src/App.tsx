@@ -10,7 +10,6 @@ import {
 import './App.css';
 
 type Period = 'Месяц' | 'Год';
-type Tab = 'Дневник' | 'Ещё';
 type Theme = 'light' | 'dark' | 'system';
 type JournalPeriod =
   | 'Все записи'
@@ -275,7 +274,6 @@ function App() {
   const [entryFood, setEntryFood] = useState('');
   const [entryCarbs, setEntryCarbs] = useState('');
   const [entryComment, setEntryComment] = useState('');
-  const [tab, setTab] = useState<Tab>('Дневник');
   const [settingsPage, setSettingsPage] = useState<string | null>(null);
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
   const [aboutSections, setAboutSections] = useState({ storage: false, backup: false, export: false });
@@ -716,24 +714,22 @@ function App() {
       cancelEntryEditor();
     } else if (settingsPage) {
       setSettingsPage(null);
-    } else if (tab === 'Ещё') {
-      setTab('Дневник');
     }
   };
 
   const currentScreenKey = moreMenuOpen
-    ? `menu-${settingsPage ?? tab}`
+    ? `menu-${settingsPage ?? 'main'}`
     : selectedEntry
       ? `entry-${selectedEntry.id}`
       : editorOpen
         ? `editor-${editingEntryId ?? 'new'}`
         : settingsPage
           ? `settings-${settingsPage}`
-          : `tab-${tab}`;
+          : 'main';
   // How many Back presses this screen is away from the main screen.
   // The browser history always holds exactly that many app entries above
   // the main one, so the Android Back button never has "empty" presses.
-  const screenUnderMenuDepth = settingsPage || tab !== 'Дневник' ? 1 : 0;
+  const screenUnderMenuDepth = settingsPage ? 1 : 0;
   const currentScreenDepth = moreMenuOpen
     ? screenUnderMenuDepth + 1
     : selectedEntry
@@ -887,7 +883,7 @@ function App() {
   const chartTotal = chartData.reduce((sum, item) => sum + item.count, 0);
   const chartTitle = period === 'Месяц' ? today.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' }) : `${today.getFullYear()} год`;
 
-  const chartVisible = !selectedEntry && !editorOpen && !settingsPage && tab === 'Дневник';
+  const chartVisible = !selectedEntry && !editorOpen && !settingsPage;
   const todayDayOfMonth = today.getDate();
   useEffect(() => {
     // Runs again whenever the chart reappears, so today's date is near the left edge.
@@ -1188,7 +1184,7 @@ function App() {
                 {settingsPage && (
                   <button className="back-button settings-back" onClick={handleInAppBack} aria-label="Назад"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 12H5M5 12l7-7M5 12l7 7" /></svg></button>
                 )}
-                <h1>{settingsPage || (tab === 'Дневник' ? 'Дневник питания' : tab)}</h1>
+                <h1>{settingsPage || 'Дневник питания'}</h1>
               </div>
             </div>
             <div className="more-menu-wrap">
@@ -1204,7 +1200,6 @@ function App() {
                   {['Аналитика', 'Управление тегами', 'Резервное копирование', 'Экспорт данных', 'Оформление', 'О приложении'].map((item) => (
                     <button type="button" key={item} onClick={() => {
                       setSettingsPage(item);
-                      setTab('Дневник');
                       setMoreMenuOpen(false);
                     }}>{item}</button>
                   ))}
@@ -1632,7 +1627,7 @@ function App() {
               </section>
             )}
 
-            {!settingsPage && tab === 'Дневник' && (
+            {!settingsPage && (
               <>
                 {storageWarningVisible && (
                   <section className="storage-warning" role="alert">
@@ -1823,16 +1818,6 @@ function App() {
               </>
             )}
 
-            {!settingsPage && tab === 'Ещё' && (
-              <section className="settings-list">
-                <h2>Настройки</h2>
-                {['Управление тегами', 'Резервное копирование', 'Экспорт данных', 'Оформление', 'О приложении'].map((item) => (
-                  <button className="setting-item" key={item} onClick={() => setSettingsPage(item)}>
-                    {item}<span>›</span>
-                  </button>
-                ))}
-              </section>
-            )}
           </main>
 
           {!settingsPage && <button className="add-button" aria-label="Добавить запись" onClick={openEditor}>+</button>}
