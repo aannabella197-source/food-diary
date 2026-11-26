@@ -458,7 +458,7 @@ function App() {
   const [showAllFoodTags, setShowAllFoodTags] = useState(false);
   const [showAllActivityTags, setShowAllActivityTags] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [hunger, setHunger] = useState(3);
+  const [hunger, setHunger] = useState<number | undefined>(undefined);
   const [mood, setMood] = useState('');
 
   const [searchText, setSearchText] = useState('');
@@ -504,7 +504,7 @@ function App() {
     setShowAllFields(false);
     setShowAllFoodTags(false);
     setShowAllActivityTags(false);
-    setHunger(3);
+    setHunger(undefined);
     setMood('');
     setEditorOpen(true);
   };
@@ -520,7 +520,7 @@ function App() {
     setShowAllFields(false);
     setShowAllFoodTags(true);
     setShowAllActivityTags(true);
-    setHunger(entry.hunger ?? 3);
+    setHunger(entry.hunger);
     setMood(entry.mood ?? '');
     setConfirmDeleteEntry(false);
     setSelectedEntry(null);
@@ -950,26 +950,22 @@ function App() {
                   <p className="field-hint">
                     1 — не очень голоден, а 5 — очень голоден
                   </p>
-                  <div className="hunger-scale">
-                    <span>1</span>
-                    <input
-                      type="range"
-                      min="1"
-                      max="5"
-                      step="1"
-                      value={hunger}
-                      onChange={(event) => setHunger(Number(event.target.value))}
-                    />
-                    <span>5</span>
-                  </div>
-                  <div className="hunger-points">
+                  <div className="hunger-options" role="group" aria-label="Уровень голода">
                     {[1, 2, 3, 4, 5].map((number) => (
-                      <span
+                      <button
+                        type="button"
                         key={number}
-                        className={number <= hunger ? 'point active-point' : 'point'}
-                      />
+                        className={`hunger-option ${hunger === number ? 'chosen' : ''}`}
+                        aria-pressed={hunger === number}
+                        onClick={() => setHunger((current) => current === number ? undefined : number)}
+                      >
+                        {number}
+                      </button>
                     ))}
                   </div>
+                  <p className="hunger-status">
+                    {hunger === undefined ? 'Не указан' : `Выбрано: ${hunger}. Нажми ещё раз, чтобы отменить.`}
+                  </p>
                 </section>
 
                 <section className="editor-card">

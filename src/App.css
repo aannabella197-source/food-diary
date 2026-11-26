@@ -1419,3 +1419,32 @@ body[data-theme="dark"] .analytics-show-all { color: #b8cba4; }
 }
 body[data-theme="dark"] .storage-warning { border-color: #6b5a35; background: #3a3322; color: #eadbb8; }
 body[data-theme="dark"] .storage-warning button { border-color: #7d6a40; background: #2b2619; color: #eadbb8; }
+
+.hunger-options {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.hunger-option {
+  width: 46px;
+  height: 46px;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: #f7f8f3;
+  color: #68765d;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 600;
+}
+.hunger-option.chosen {
+  border-color: #82976c;
+  background: #e8eddf;
+  color: #4f6140;
+}
+.hunger-status {
+  margin: 10px 0 0;
+  color: #90998a;
+  font-size: 12px;
+}
+body[data-theme="dark"] .hunger-option { border-color: #414a3b; background: #343c30; color: #d0ddc2; }
+body[data-theme="dark"] .hunger-option.chosen { border-color: #91a77a; background: #46553b; color: #edf4e6; }
