@@ -21,6 +21,8 @@ type Props = {
 export function DynamicsChart({
   period, onPeriodChange, safeChartOffset, minChartOffset, onOffsetChange, chartTitle, chartTotal, chartData, scrollRef, chartSelection, onToggleSelection,
 }: Props) {
+  // Bars are relative to the busiest day (or month) of the shown period.
+  const maxCount = Math.max(1, ...chartData.map((item) => item.count));
   return (
     <>
       <section className="period-switch">
@@ -66,7 +68,7 @@ export function DynamicsChart({
               <div className="bar-area">
                 <div
                   className={`bar ${item.count === 0 ? 'empty' : ''}`}
-                  style={{ height: `${item.count === 0 ? 4 : item.count * (period === 'Год' ? 5 : 16) + 4}px` }}
+                  style={{ height: item.count === 0 ? '4px' : `max(8px, ${(item.count / maxCount) * 100}%)` }}
                 />
               </div>
               <span className="bar-day">{item.label}</span>
