@@ -234,6 +234,15 @@ function loadStored<T>(key: string, fallback: T, isValid: (value: unknown) => va
 }
 
 
+const localDateKey = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+const todayKey = () => localDateKey(new Date());
+const monthStartKey = () => {
+  const date = new Date();
+  date.setDate(1);
+  return localDateKey(date);
+};
+
 const journalPeriods: JournalPeriod[] = [
   'Все записи',
   'Сегодня',
@@ -276,8 +285,8 @@ function App() {
   const [dragOverTag, setDragOverTag] = useState<string | null>(null);
   const [exportFormat, setExportFormat] = useState<'Excel (.xlsx)' | 'CSV (.csv)'>('CSV (.csv)');
   const [exportPeriod, setExportPeriod] = useState('Все записи');
-  const [exportFrom, setExportFrom] = useState('2026-11-01');
-  const [exportTo, setExportTo] = useState('2026-11-24');
+  const [exportFrom, setExportFrom] = useState(monthStartKey);
+  const [exportTo, setExportTo] = useState(todayKey);
   const [includeTags, setIncludeTags] = useState(true);
   const [includeCarbs, setIncludeCarbs] = useState(true);
   const [includeHunger, setIncludeHunger] = useState(true);
@@ -554,8 +563,8 @@ function App() {
   const [journalPeriod, setJournalPeriod] =
     useState<JournalPeriod>('Все записи');
   const [filterTags, setFilterTags] = useState<string[]>([]);
-  const [dateFrom, setDateFrom] = useState('2026-11-01');
-  const [dateTo, setDateTo] = useState('2026-11-24');
+  const [dateFrom, setDateFrom] = useState(monthStartKey);
+  const [dateTo, setDateTo] = useState(todayKey);
 
   const toggleTag = (tag: string) => {
     setSelectedTags((current) =>
@@ -577,8 +586,8 @@ function App() {
     setSearchText('');
     setJournalPeriod('Все записи');
     setFilterTags([]);
-    setDateFrom('2026-11-01');
-    setDateTo('2026-11-24');
+    setDateFrom(monthStartKey());
+    setDateTo(todayKey());
   };
 
   const openEditor = () => {
@@ -1423,7 +1432,7 @@ function App() {
                   <p>В файл попадут записи за выбранный период и только отмеченные дополнительные поля.</p>
                 </div>
                 <button className="export-button" onClick={exportFormat === 'CSV (.csv)' ? exportCsv : exportExcel} disabled={exportEntries.length === 0}>Экспортировать {exportFormat === 'CSV (.csv)' ? 'CSV' : 'Excel'}-файл</button>
-                <p className="export-note">{exportEntries.length === 0 ? 'За выбранный период записей нет.' : 'Файл CSV сохранится на устройство. Его можно открыть в Excel или Google Таблицах.'}</p>
+                <p className="export-note">{exportEntries.length === 0 ? 'За выбранный период записей нет.' : exportFormat === 'CSV (.csv)' ? 'Файл CSV сохранится на устройство. Его можно открыть в Excel. Для Google Таблиц на телефоне лучше выбрать формат Excel.' : 'Файл Excel сохранится на устройство. Его можно открыть в Excel или Google Таблицах.'}</p>
               </section>
             )}
 
@@ -1462,7 +1471,7 @@ function App() {
                   <button className="about-section-toggle" onClick={() => setAboutSections((current) => ({ ...current, export: !current.export }))} aria-expanded={aboutSections.export}>
                     <span>Экспорт данных</span><span className="about-section-chevron">{aboutSections.export ? '⌃' : '⌄'}</span>
                   </button>
-                  {aboutSections.export && <p className="about-section-content">В разделе «Ещё» → «Экспорт данных» можно выбрать период и состав данных, а затем скачать файл CSV для Excel или Google Таблиц.</p>}
+                  {aboutSections.export && <p className="about-section-content">В разделе «Ещё» → «Экспорт данных» можно выбрать период и состав данных, а затем скачать файл Excel (.xlsx) или CSV. Для Google Таблиц на телефоне удобнее формат Excel.</p>}
                 </div>
 
                 <p className="about-disclaimer">Дневник предназначен для личных записей и не является медицинским приложением.</p>
@@ -1520,7 +1529,7 @@ function App() {
                   <ul className="backup-includes">
                     <li>Все записи дневника: еда, дата и время</li>
                     <li>Теги и их настройки</li>
-                    <li>Настройки оформления и редактора</li>
+                    <li>Тема оформления</li>
                   </ul>
                 </div>
 
