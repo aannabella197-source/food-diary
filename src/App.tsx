@@ -281,6 +281,9 @@ function App() {
   const [tagIcons, setTagIcons] = useState<Record<string, string>>(() => applyIconUpdate(loadStored('food-diary-tag-icons', {}, isTagIconMap)));
   const [deleteTag, setDeleteTag] = useState<string | null>(null);
   const [tagHintOpen, setTagHintOpen] = useState(false);
+  const [orphanTagsOpen, setOrphanTagsOpen] = useState(false);
+  const [replacingOrphan, setReplacingOrphan] = useState<string | null>(null);
+  const [orphanTarget, setOrphanTarget] = useState('');
   const [draggedTag, setDraggedTag] = useState<string | null>(null);
   const [dragOverTag, setDragOverTag] = useState<string | null>(null);
   const [exportFormat, setExportFormat] = useState<'Excel (.xlsx)' | 'CSV (.csv)'>('CSV (.csv)');
@@ -503,6 +506,32 @@ function App() {
     setTagEditorOpen(false);
     setEditingTag(null);
     setTagDraft('');
+  };
+  // Tags that are stored in entries of the current category but are no longer
+  // in the tag list (deleted, renamed before renaming updated entries, or restored).
+  const currentEntryField = tagCategory === 'food' ? 'tags' : 'activity';
+  const tagEntryCount = (tag: string) => journalEntries.filter((entry) => entry[currentEntryField].includes(tag)).length;
+  const orphanTags = Array.from(journalEntries.reduce((counts, entry) => {
+    for (const tag of entry[currentEntryField]) {
+      if (!currentTags.includes(tag)) counts.set(tag, (counts.get(tag) || 0) + 1);
+    }
+    return counts;
+  }, new Map<string, number>()), ([tag, count]) => ({ tag, count }))
+    .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag, 'ru'));
+  const restoreOrphanTag = (tag: string) => {
+    if (currentTags.length >= 30 || currentTags.includes(tag)) return;
+    setCurrentTags((items) => [...items, tag]);
+  };
+  const replaceOrphanTag = (oldTag: string, newTag: string, count: number) => {
+    if (!newTag || !currentTags.includes(newTag)) return;
+    if (!window.confirm(`Заменить «${oldTag}» на «${newTag}» в записях (${count})? Это действие нельзя отменить.`)) return;
+    const field = currentEntryField;
+    setJournalEntries((entries) => entries.map((entry) => entry[field].includes(oldTag)
+      ? { ...entry, [field]: Array.from(new Set(entry[field].map((tag) => tag === oldTag ? newTag : tag))) }
+      : entry));
+    setFilterTags((items) => Array.from(new Set(items.map((tag) => tag === oldTag ? newTag : tag))));
+    setReplacingOrphan(null);
+    setOrphanTarget('');
   };
   const renameEntryCount = editingTag
     ? journalEntries.filter((entry) => (tagCategory === 'food' ? entry.tags : entry.activity).includes(editingTag)).length
@@ -1280,8 +1309,8 @@ function App() {
               <section className="settings-page tag-management">
                 <p className="muted">Две категории тегов. До 30 тегов в каждой.</p>
                 <div className="tag-category-switch">
-                  <button className={tagCategory === 'food' ? 'active' : ''} onClick={() => { setTagCategory('food'); setTagEditorOpen(false); setDeleteTag(null); }}>Тип еды</button>
-                  <button className={tagCategory === 'activity' ? 'active' : ''} onClick={() => { setTagCategory('activity'); setTagEditorOpen(false); setDeleteTag(null); }}>Активность</button>
+                  <button className={tagCategory === 'food' ? 'active' : ''} onClick={() => { setTagCategory('food'); setTagEditorOpen(false); setDeleteTag(null); setReplacingOrphan(null); }}>Тип еды</button>
+                  <button className={tagCategory === 'activity' ? 'active' : ''} onClick={() => { setTagCategory('activity'); setTagEditorOpen(false); setDeleteTag(null); setReplacingOrphan(null); }}>Активность</button>
                 </div>
                 <div className="tag-management-heading">
                   <span>{currentTags.length} из 30 тегов</span>
@@ -1382,7 +1411,7 @@ function App() {
                       </div>
                       {deleteTag === tag && (
                         <div className="tag-delete-confirm">
-                          <span>Удалить тег «{tag}»?</span>
+                          <span>Удалить тег «{tag}»?{tagEntryCount(tag) > 0 && ` Тег есть в записях: ${tagEntryCount(tag)}. В них он сохранится, но не будет учитываться в фильтрах и аналитике.`}</span>
                           <button onClick={() => setDeleteTag(null)}>Отмена</button>
                           <button className="danger" onClick={() => removeTag(tag)}>Удалить</button>
                         </div>
@@ -1390,6 +1419,45 @@ function App() {
                     </div>
                   ))}
                 </div>
+                {orphanTags.length > 0 && (
+                  <div className="orphan-tags">
+                    <button type="button" className="tag-hint-toggle" aria-expanded={orphanTagsOpen} onClick={() => setOrphanTagsOpen((open) => !open)}>
+                      <span>Теги из старых записей ({orphanTags.length})</span><span aria-hidden="true">{orphanTagsOpen ? '⌃' : '⌄'}</span>
+                    </button>
+                    {orphanTagsOpen && (
+                      <>
+                        <p className="orphan-tags-note">Этих тегов нет в списке, но они остались в записях: например, после удаления или переименования тега. Перед заменой лучше сделать резервную копию.</p>
+                        {orphanTags.map(({ tag, count }) => (
+                          <div className="orphan-tag" key={tag}>
+                            <div className="orphan-tag-title">
+                              <span className="managed-tag-icon"><TagGlyph name={tagIcons[tag] || defaultTagIcon(tag)} size={18} /></span>
+                              <strong>{tag}</strong>
+                              <small>записей: {count}</small>
+                            </div>
+                            {replacingOrphan === tag ? (
+                              <div className="orphan-tag-replace">
+                                <select value={orphanTarget} onChange={(event) => setOrphanTarget(event.target.value)} aria-label="Заменить на тег">
+                                  <option value="">Выбери тег…</option>
+                                  {currentTags.map((item) => <option key={item} value={item}>{item}</option>)}
+                                </select>
+                                <div className="orphan-tag-actions">
+                                  <button type="button" onClick={() => { setReplacingOrphan(null); setOrphanTarget(''); }}>Отмена</button>
+                                  <button type="button" className="primary" disabled={!orphanTarget} onClick={() => replaceOrphanTag(tag, orphanTarget, count)}>Заменить</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="orphan-tag-actions">
+                                <button type="button" disabled={currentTags.length >= 30} onClick={() => restoreOrphanTag(tag)}>Вернуть в список</button>
+                                <button type="button" disabled={currentTags.length === 0} onClick={() => { setReplacingOrphan(tag); setOrphanTarget(''); }}>Заменить на…</button>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                        {currentTags.length >= 30 && <p className="orphan-tags-note">В списке уже 30 тегов: чтобы вернуть тег, сначала удали какой-нибудь другой.</p>}
+                      </>
+                    )}
+                  </div>
+                )}
               </section>
             )}
 
