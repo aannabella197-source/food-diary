@@ -365,10 +365,10 @@ function App() {
     if (exportEntries.length === 0 || exportFormat !== 'CSV (.csv)') return;
     const escapeCell = (value: string | number) => {
       const cell = String(value);
-      return /[;"\\r\\n]/.test(cell) ? '"' + cell.replace(/"/g, '""') + '"' : cell;
+      return /[;"\r\n]/.test(cell) ? '"' + cell.replace(/"/g, '""') + '"' : cell;
     };
-    const csv = getExportRows().map((row) => row.map(escapeCell).join(';')).join('\\r\\n');
-    const blob = new Blob(['\\uFEFF', csv], { type: 'text/csv;charset=utf-8;' });
+    const csv = getExportRows().map((row) => row.map(escapeCell).join(';')).join('\r\n');
+    const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
