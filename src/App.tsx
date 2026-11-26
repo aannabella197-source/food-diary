@@ -909,11 +909,15 @@ function App() {
   const entryChange = analyticsEntries.length - previousEntries.length;
   const formatChange = (value: number) => value > 0 ? `+${value}` : String(value);
   const strongestPart = [...dayParts].sort((a, b) => b.count - a.count)[0];
-  const analyticsObservations = [
-    analyticsEntries.length ? `Больше всего записей приходится на время «${strongestPart.label.toLowerCase()}».` : 'Пока недостаточно записей для наблюдений.',
-    loggedDays.size ? `В дневнике есть записи за ${loggedDays.size} из ${analyticsDays} дней выбранного периода.` : 'В выбранном периоде пока нет записей.',
-    `По сравнению с предыдущим равным периодом количество записей изменилось на ${formatChange(entryChange)}.`,
-  ];
+  // Observations are shown only when the period has enough entries to be meaningful.
+  const MIN_ENTRIES_FOR_OBSERVATIONS = 5;
+  const analyticsObservations = analyticsEntries.length < MIN_ENTRIES_FOR_OBSERVATIONS
+    ? [`Пока недостаточно записей для наблюдений: нужно хотя бы ${MIN_ENTRIES_FOR_OBSERVATIONS} записей за выбранный период.`]
+    : [
+        `Больше всего записей приходится на время «${strongestPart.label.toLowerCase()}».`,
+        `В дневнике есть записи за ${loggedDays.size} из ${analyticsDays} дней выбранного периода.`,
+        `По сравнению с предыдущим равным периодом количество записей изменилось на ${formatChange(entryChange)}.`,
+      ];
 
   const formatDate = (date: string) => {
     return new Date(`${date}T12:00:00`).toLocaleDateString('ru-RU', {
