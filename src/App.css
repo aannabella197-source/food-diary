@@ -1451,3 +1451,22 @@ body[data-theme="dark"] .hunger-option.chosen { border-color: #91a77a; backgroun
 
 .tag-rename-note { color: #69775e; font-size: 13px; }
 body[data-theme="dark"] .tag-rename-note { color: #b2bea7; }
+
+.tag-hint-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: #69775e;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tag-hint-content { text-align: left; font-size: 13px; }
+.tag-hint-content p { margin: 0 0 6px; }
+.tag-hint-content b { color: #5f7350; }
+body[data-theme="dark"] .tag-hint-toggle, body[data-theme="dark"] .tag-hint-content b { color: #c1d1ae; }

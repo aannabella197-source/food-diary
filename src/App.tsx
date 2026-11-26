@@ -271,6 +271,7 @@ function App() {
   const [tagIcon, setTagIcon] = useState('tag');
   const [tagIcons, setTagIcons] = useState<Record<string, string>>(() => applyIconUpdate(loadStored('food-diary-tag-icons', {}, isTagIconMap)));
   const [deleteTag, setDeleteTag] = useState<string | null>(null);
+  const [tagHintOpen, setTagHintOpen] = useState(false);
   const [draggedTag, setDraggedTag] = useState<string | null>(null);
   const [dragOverTag, setDragOverTag] = useState<string | null>(null);
   const [exportFormat, setExportFormat] = useState<'Excel (.xlsx)' | 'CSV (.csv)'>('CSV (.csv)');
@@ -644,6 +645,12 @@ function App() {
     setEditorOpen(false);
   };
 
+  // Disabled tags are not offered for new choices, but an entry being edited
+  // keeps showing the disabled tags it already had.
+  const editingOriginalEntry = editingEntryId !== null ? journalEntries.find((entry) => entry.id === editingEntryId) : undefined;
+  const editorFoodTags = foodTags.filter((tag) => !disabledFoodTags.includes(tag) || !!editingOriginalEntry?.tags.includes(tag));
+  const editorActivityTags = activityTags.filter((tag) => !disabledActivityTags.includes(tag) || !!editingOriginalEntry?.activity.includes(tag));
+
   const deleteSelectedEntry = () => {
     if (!selectedEntry) return;
     setJournalEntries((current) => current.filter((entry) => entry.id !== selectedEntry.id));
@@ -974,7 +981,7 @@ function App() {
             <section className="editor-card">
               <div className="editor-section-title">Тип еды</div>
               <div className="tag-gallery">
-                {(showAllFoodTags ? foodTags : foodTags.slice(0, 4)).map((tag) => (
+                {(showAllFoodTags ? editorFoodTags : editorFoodTags.slice(0, 4)).map((tag) => (
                   <button
                     key={tag}
                     className={`choice-tag ${selectedTags.includes(tag) ? 'chosen' : ''}`}
@@ -1004,7 +1011,7 @@ function App() {
             <section className="editor-card">
               <div className="editor-section-title">Активность</div>
               <div className="tag-gallery">
-                {(showAllActivityTags ? activityTags : activityTags.slice(0, 4)).map((tag) => (
+                {(showAllActivityTags ? editorActivityTags : editorActivityTags.slice(0, 4)).map((tag) => (
                   <button
                     key={tag}
                     className={`choice-tag ${selectedTags.includes(tag) ? 'chosen' : ''}`}
@@ -1265,7 +1272,19 @@ function App() {
                     </div>
                   </div>
                 )}
-                <p className="tag-management-hint">На компьютере перетаскивай тег мышью. На телефоне удерживай значок с точками и перемещай тег.</p>
+                <div className="tag-management-hint">
+                  <button type="button" className="tag-hint-toggle" aria-expanded={tagHintOpen} onClick={() => setTagHintOpen((open) => !open)}>
+                    <span>Подсказка</span><span aria-hidden="true">{tagHintOpen ? '⌃' : '⌄'}</span>
+                  </button>
+                  {tagHintOpen && (
+                    <div className="tag-hint-content">
+                      <p>На компьютере перетаскивай тег мышью. На телефоне удерживай значок с точками и перемещай тег.</p>
+                      <p><b>✎</b> — изменить название и значок.</p>
+                      <p><b>Ⅱ</b> — отключить тег: он не будет предлагаться в новых записях, фильтрах и аналитике, но останется в старых записях. Нажми <b>✓</b>, чтобы включить его снова.</p>
+                      <p><b>×</b> — удалить тег.</p>
+                    </div>
+                  )}
+                </div>
                 <div className="managed-tag-list">
                   {currentTags.map((tag) => (
                     <div
@@ -1614,7 +1633,7 @@ function App() {
                             className={filterTags.includes(tag) ? 'filter-tag selected' : 'filter-tag'}
                             onClick={() => toggleFilterTag(tag)}
                           >
-                            {tag}
+                            <TagGlyph name={tagIcons[tag] || defaultTagIcon(tag)} size={13} />{tag}
                           </button>
                         ))}
                       </div>
