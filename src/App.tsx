@@ -538,6 +538,9 @@ function App() {
   const exportFileName = 'food-diary-export-' + getExportFileDate() + (exportFormat === 'CSV (.csv)' ? '.csv' : '.xlsx');
   const exportFileType = exportFormat === 'CSV (.csv)' ? 'text/csv' : XLSX_TYPE;
   const canShareExport = (() => {
+    // Chrome on Android reports .xlsx as shareable but then refuses to share it,
+    // so sharing is offered for CSV only.
+    if (exportFormat !== 'CSV (.csv)') return false;
     try {
       return typeof navigator.canShare === 'function' &&
         navigator.canShare({ files: [new File([''], exportFileName, { type: exportFileType })] });
@@ -1036,6 +1039,20 @@ function App() {
   const entryChange = analyticsEntries.length - previousEntries.length;
   const formatChange = (value: number) => value > 0 ? `+${value}` : String(value);
   const strongestPart = [...dayParts].sort((a, b) => b.count - a.count)[0];
+  // Hunger used to be saved as 3 automatically; it is only reliable for entries
+  // dated from 26 November 2026, when that stopped.
+  const HUNGER_RELIABLE_FROM = '2026-11-26';
+  const MIN_MARKED_ENTRIES = 3;
+  const hungerEntries = analyticsEntries.filter((entry) => entry.date >= HUNGER_RELIABLE_FROM && typeof entry.hunger === 'number');
+  const averageHunger = hungerEntries.length ? hungerEntries.reduce((sum, entry) => sum + (entry.hunger ?? 0), 0) / hungerEntries.length : 0;
+  const moodEntries = analyticsEntries.filter((entry) => entry.mood);
+  const topMood = moodEntries.length >= MIN_MARKED_ENTRIES
+    ? Array.from(moodEntries.reduce((counts, entry) => counts.set(entry.mood!, (counts.get(entry.mood!) || 0) + 1), new Map<string, number>()))
+        .sort((a, b) => b[1] - a[1])[0]
+    : null;
+  // "в 1 записи", "в 2 записях", "в 21 записи", "в 11 записях".
+  const inEntriesWord = (count: number) => count % 10 === 1 && count % 100 !== 11 ? 'записи' : 'записях';
+
   // Observations are shown only when the period has enough entries to be meaningful.
   const MIN_ENTRIES_FOR_OBSERVATIONS = 5;
   const analyticsObservations = analyticsEntries.length < MIN_ENTRIES_FOR_OBSERVATIONS
@@ -1044,6 +1061,12 @@ function App() {
         `Больше всего записей приходится на время «${strongestPart.label.toLowerCase()}».`,
         `В дневнике есть записи за ${loggedDays.size} из ${analyticsDays} дней выбранного периода.`,
         `По сравнению с предыдущим равным периодом количество записей изменилось на ${formatChange(entryChange)}.`,
+        ...(hungerEntries.length >= MIN_MARKED_ENTRIES
+          ? [`Средний уровень голода — ${averageHunger.toFixed(1).replace('.', ',')} из 5 (указан в ${hungerEntries.length} ${inEntriesWord(hungerEntries.length)}).`]
+          : []),
+        ...(topMood
+          ? [`Чаще всего отмечено настроение «${topMood[0]}» — в ${topMood[1]} ${inEntriesWord(topMood[1])} из ${moodEntries.length}, где оно указано.`]
+          : []),
       ];
 
   const chartSelectionLabel = chartSelection
@@ -1610,7 +1633,7 @@ function App() {
                   <button className="export-button" onClick={exportFormat === 'CSV (.csv)' ? exportCsv : exportExcel} disabled={exportEntries.length === 0}>Экспортировать {exportFormat === 'CSV (.csv)' ? 'CSV' : 'Excel'}-файл</button>
                   {canShareExport && <button className="export-button secondary" onClick={() => void shareExport()} disabled={exportEntries.length === 0}>Поделиться</button>}
                 </div>
-                <p className="export-note">{exportEntries.length === 0 ? 'За выбранный период записей нет.' : exportFormat === 'CSV (.csv)' ? 'Файл CSV сохранится на устройство. Его можно открыть в Excel. Для Google Таблиц на телефоне лучше выбрать формат Excel.' : 'Файл Excel сохранится на устройство. Его можно открыть в Excel или Google Таблицах.'}</p>
+                <p className="export-note">{exportEntries.length === 0 ? 'За выбранный период записей нет.' : exportFormat === 'CSV (.csv)' ? 'Файл CSV сохранится на устройство. Его можно открыть в Excel. Для Google Таблиц на телефоне лучше выбрать формат Excel.' : 'Файл Excel сохранится на устройство. Его можно открыть в Excel или Google Таблицах. Поделиться (например, отправить в Google Диск) можно файлом CSV.'}</p>
               </section>
             )}
 
