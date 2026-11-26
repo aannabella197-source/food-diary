@@ -25,6 +25,7 @@ import { EntryDetailPage } from './pages/EntryDetailPage';
 import { EntryEditorPage } from './pages/EntryEditorPage';
 import { useEntryDraft } from './entryDraft';
 import { useAndroidBack } from './useAndroidBack';
+import { downloadBackup, parseBackup } from './backup';
 import { filterJournalEntries, groupEntriesByDate } from './journalFilter';
 import { buildChart, formatChartSelection } from './chartData';
 import { monthStartKey, todayKey } from './format';
@@ -78,53 +79,23 @@ function App() {
 
   const restoreBackup = async (file: File) => {
     try {
-      const parsed: unknown = JSON.parse(await file.text());
-      if (!parsed || typeof parsed !== 'object') throw new Error('Файл не распознан.');
-      const backup = parsed as { app?: unknown; version?: unknown; data?: Record<string, unknown> };
-      const data = backup.data;
-      if (
-        backup.app !== 'food-diary' ||
-        backup.version !== 1 ||
-        !data ||
-        !Array.isArray(data.journalEntries) ||
-        !data.journalEntries.every((entry) =>
-          entry && typeof entry === 'object' &&
-          typeof (entry as JournalEntry).id === 'number' &&
-          typeof (entry as JournalEntry).date === 'string' &&
-          typeof (entry as JournalEntry).time === 'string' &&
-          typeof (entry as JournalEntry).food === 'string' &&
-          Array.isArray((entry as JournalEntry).tags) &&
-          Array.isArray((entry as JournalEntry).activity)
-        ) ||
-        !Array.isArray(data.foodTags) ||
-        !Array.isArray(data.activityTags) ||
-        !Array.isArray(data.disabledFoodTags) ||
-        !Array.isArray(data.disabledActivityTags) ||
-        !data.tagIcons ||
-        typeof data.tagIcons !== 'object' ||
-        Array.isArray(data.tagIcons) ||
-        !['light', 'dark', 'system'].includes(String(data.theme))
-      ) {
-        throw new Error('Структура файла не подходит для восстановления дневника.');
-      }
+      const { data, createdAt } = parseBackup(await file.text());
 
       if (!window.confirm('Восстановить данные из выбранной копии? Текущие записи, теги и настройки будут заменены данными из файла.')) return;
 
-      setJournalEntries(data.journalEntries as JournalEntry[]);
-      setFoodTags(data.foodTags as string[]);
-      setActivityTags(data.activityTags as string[]);
-      setDisabledFoodTags(data.disabledFoodTags as string[]);
-      setDisabledActivityTags(data.disabledActivityTags as string[]);
-      setTagIcons(data.tagIcons as Record<string, string>);
-      setTheme(data.theme as Theme);
+      setJournalEntries(data.journalEntries);
+      setFoodTags(data.foodTags);
+      setActivityTags(data.activityTags);
+      setDisabledFoodTags(data.disabledFoodTags);
+      setDisabledActivityTags(data.disabledActivityTags);
+      setTagIcons(data.tagIcons);
+      setTheme(data.theme);
       setSelectedEntry(null);
       setEditingEntryId(null);
       setEditorOpen(false);
       setSelectedTags([]);
       const info = {
-        createdAt: typeof (backup as { createdAt?: unknown }).createdAt === 'string'
-          ? (backup as { createdAt: string }).createdAt
-          : new Date(file.lastModified).toISOString(),
+        createdAt: createdAt ?? new Date(file.lastModified).toISOString(),
         size: file.size,
       };
       setBackupInfo(info);
@@ -159,33 +130,7 @@ function App() {
   };
 
   const createBackup = () => {
-    const createdAt = new Date().toISOString();
-    const backup = {
-      app: 'food-diary',
-      version: 1,
-      createdAt,
-      data: {
-        journalEntries,
-        foodTags,
-        activityTags,
-        disabledFoodTags,
-        disabledActivityTags,
-        tagIcons,
-        theme,
-      },
-    };
-    const content = JSON.stringify(backup, null, 2);
-    const blob = new Blob([content], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    const stamp = createdAt.replace(/[:.]/g, '-');
-    link.href = url;
-    link.download = `food-diary-backup-${stamp}.json`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1500);
-    const info = { createdAt, size: blob.size };
+    const info = downloadBackup({ journalEntries, foodTags, activityTags, disabledFoodTags, disabledActivityTags, tagIcons, theme });
     setBackupInfo(info);
     localStorage.setItem('food-diary-last-backup', JSON.stringify(info));
   };
