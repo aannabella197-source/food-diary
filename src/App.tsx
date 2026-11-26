@@ -266,6 +266,16 @@ const pluralDays = (count: number) => {
   return lastTwo >= 11 && lastTwo <= 14 ? 'дней' : last === 1 ? 'день' : last >= 2 && last <= 4 ? 'дня' : 'дней';
 };
 
+// When an entry is shown, meal tags go first in this order, then the rest as saved.
+const MEAL_TAG_ORDER = ['завтрак', 'обед', 'ужин', 'перекус'];
+const mealTagsFirst = (tags: string[]) => {
+  const rank = (tag: string) => {
+    const index = MEAL_TAG_ORDER.indexOf(tag.trim().toLocaleLowerCase('ru'));
+    return index === -1 ? MEAL_TAG_ORDER.length : index;
+  };
+  return tags.map((tag, index) => ({ tag, index })).sort((a, b) => rank(a.tag) - rank(b.tag) || a.index - b.index).map((item) => item.tag);
+};
+
 const journalPeriods: JournalPeriod[] = [
   'Все записи',
   'Сегодня',
@@ -1096,7 +1106,7 @@ function App() {
               {selectedEntry.tags.length > 0 && (
                 <div className="entry-detail-row">
                   <h2>Тип еды</h2>
-                  <div className="journal-entry-tags">{selectedEntry.tags.map((tag) => <span className="tag" key={tag}><TagGlyph name={tagIcons[tag] || defaultTagIcon(tag)} size={13} />{tag}</span>)}</div>
+                  <div className="journal-entry-tags">{mealTagsFirst(selectedEntry.tags).map((tag) => <span className="tag" key={tag}><TagGlyph name={tagIcons[tag] || defaultTagIcon(tag)} size={13} />{tag}</span>)}</div>
                 </div>
               )}
               {selectedEntry.carbs !== null && (
@@ -1945,7 +1955,7 @@ function App() {
                           <article className="journal-entry" key={entry.id} onClick={() => setSelectedEntry(entry)} role="button" tabIndex={0} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') setSelectedEntry(entry); }}>
                             <span className="journal-time">{entry.time}</span>
                             <div className="journal-entry-tags">
-                              {entry.tags.map((tag) => (
+                              {mealTagsFirst(entry.tags).map((tag) => (
                                 <span className="tag" key={tag}><TagGlyph name={tagIcons[tag] || defaultTagIcon(tag)} size={13} />{tag}</span>
                               ))}
                               {entry.activity.map((tag) => (
