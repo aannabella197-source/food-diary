@@ -1,6 +1,5 @@
 
 import { useEffect, useRef, useState } from 'react';
-import writeExcelFile from 'write-excel-file/browser';
 import { GripVertical } from 'lucide-react';
 import './App.css';
 import type { JournalEntry, JournalPeriod, Period, Theme } from './types';
@@ -9,6 +8,11 @@ import { TagGlyph } from './components/TagGlyph';
 import {
   damagedStorageKeys, defaultActivityTags, defaultFoodTags, isJournalEntryList, isStringArray, isTagIconMap, loadStored,
 } from './storage';
+import { AppearancePage } from './pages/AppearancePage';
+import { AboutPage } from './pages/AboutPage';
+import { BackupPage } from './pages/BackupPage';
+import { ExportPage } from './pages/ExportPage';
+import { useExportSettings } from './exportSettings';
 import { formatEntryCount, journalPeriods, mealTagsFirst, monthStartKey, pluralDays, todayKey } from './format';
 
 function App() {
@@ -48,13 +52,8 @@ function App() {
   const [orphanTarget, setOrphanTarget] = useState('');
   const [draggedTag, setDraggedTag] = useState<string | null>(null);
   const [dragOverTag, setDragOverTag] = useState<string | null>(null);
-  const [exportFormat, setExportFormat] = useState<'Excel (.xlsx)' | 'CSV (.csv)'>('CSV (.csv)');
-  const [exportPeriod, setExportPeriod] = useState('Все записи');
-  const [exportFrom, setExportFrom] = useState(monthStartKey);
-  const [exportTo, setExportTo] = useState(todayKey);
-  const [includeTags, setIncludeTags] = useState(true);
-  const [includeCarbs, setIncludeCarbs] = useState(true);
-  const [includeHunger, setIncludeHunger] = useState(true);
+  // Export choices live here so they are kept while moving between screens.
+  const exportSettings = useExportSettings();
   const [backupInfo, setBackupInfo] = useState<{ createdAt: string; size: number } | null>(() =>
     loadStored('food-diary-last-backup', null, (value): value is { createdAt: string; size: number } | null =>
       value === null || (!!value && typeof value === 'object' &&
@@ -74,7 +73,6 @@ function App() {
     localStorage.setItem('food-diary-tag-icons', JSON.stringify(tagIcons));
   }, [foodTags, activityTags, disabledFoodTags, disabledActivityTags, tagIcons]);
 
-  const restoreFileInput = useRef<HTMLInputElement>(null);
 
   const restoreBackup = async (file: File) => {
     try {
@@ -190,108 +188,6 @@ function App() {
     localStorage.setItem('food-diary-last-backup', JSON.stringify(info));
   };
 
-  const exportDateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  const exportEntries = journalEntries
-    .filter((entry) => {
-      if (exportPeriod === 'Текущий месяц') {
-        const now = new Date();
-        const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
-        return entry.date >= monthStart && entry.date <= exportDateKey(new Date());
-      }
-      if (exportPeriod === 'Последние 7 дней') {
-        const end = new Date();
-        end.setHours(0, 0, 0, 0);
-        const start = new Date(end);
-        start.setDate(start.getDate() - 6);
-        return entry.date >= exportDateKey(start) && entry.date <= exportDateKey(end);
-      }
-      if (exportPeriod === 'Произвольный период') {
-        if (exportFrom && entry.date < exportFrom) return false;
-        if (exportTo && entry.date > exportTo) return false;
-      }
-      return true;
-    })
-    .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
-
-  const getExportRows = () => {
-    const headers = ['Дата', 'Время', 'Еда'];
-    if (includeTags) headers.push('Теги еды', 'Активность');
-    if (includeCarbs) headers.push('Углеводы (г)', 'Комментарий');
-    if (includeHunger) headers.push('Уровень голода', 'Настроение');
-    const rows = exportEntries.map((entry) => {
-      const row: (string | number)[] = [entry.date, entry.time, entry.food];
-      if (includeTags) row.push(entry.tags.join(', '), entry.activity.join(', '));
-      if (includeCarbs) row.push(entry.carbs ?? '', entry.comment || '');
-      if (includeHunger) row.push(entry.hunger ?? '', entry.mood || '');
-      return row;
-    });
-    return [headers, ...rows];
-  };
-
-  const getExportFileDate = () => exportDateKey(new Date());
-
-  const buildCsvBlob = () => {
-    const escapeCell = (value: string | number) => {
-      const cell = String(value);
-      return /[;"\r\n]/.test(cell) ? '"' + cell.replace(/"/g, '""') + '"' : cell;
-    };
-    const csv = getExportRows().map((row) => row.map(escapeCell).join(';')).join('\r\n');
-    return new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8;' });
-  };
-
-  const exportCsv = () => {
-    if (exportEntries.length === 0 || exportFormat !== 'CSV (.csv)') return;
-    const blob = buildCsvBlob();
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'food-diary-export-' + getExportFileDate() + '.csv';
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-  };
-
-  const exportExcel = async () => {
-    if (exportEntries.length === 0 || exportFormat !== 'Excel (.xlsx)') return;
-    const rows = getExportRows();
-    try {
-      await writeExcelFile(rows.map((row) => row.map((cell) => cell === '' ? null : cell)), {
-        sheet: 'Дневник питания',
-        columns: rows[0].map((header) => ({ width: Math.max(14, Math.min(36, String(header).length + 4)) })),
-      }).toFile('food-diary-export-' + getExportFileDate() + '.xlsx');
-    } catch {
-      window.alert('Не удалось создать файл Excel. Попробуй ещё раз или выбери формат CSV.');
-    }
-  };
-
-  // Sharing files through the Android share menu. Browsers decide which file
-  // types may be shared, so support is checked for the chosen format.
-  const XLSX_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-  const exportFileName = 'food-diary-export-' + getExportFileDate() + (exportFormat === 'CSV (.csv)' ? '.csv' : '.xlsx');
-  const exportFileType = exportFormat === 'CSV (.csv)' ? 'text/csv' : XLSX_TYPE;
-  const canShareExport = (() => {
-    // Chrome on Android reports .xlsx as shareable but then refuses to share it,
-    // so sharing is offered for CSV only.
-    if (exportFormat !== 'CSV (.csv)') return false;
-    try {
-      return typeof navigator.canShare === 'function' &&
-        navigator.canShare({ files: [new File([''], exportFileName, { type: exportFileType })] });
-    } catch {
-      return false;
-    }
-  })();
-  const shareExport = async () => {
-    if (exportEntries.length === 0 || exportFormat !== 'CSV (.csv)') return;
-    const blob = buildCsvBlob();
-    const file = new File([blob], exportFileName, { type: exportFileType });
-    try {
-      await navigator.share({ files: [file], title: 'Дневник питания' });
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') return;
-      window.alert('Не удалось открыть меню «Поделиться». Можно скачать файл кнопкой «Экспортировать».');
-    }
-  };
   const currentTags = tagCategory === 'food' ? foodTags : activityTags;
   const setCurrentTags = tagCategory === 'food' ? setFoodTags : setActivityTags;
   const currentDisabled = tagCategory === 'food' ? disabledFoodTags : disabledActivityTags;
@@ -1137,30 +1033,7 @@ function App() {
               </section>
             )}
 
-            {settingsPage === 'Оформление' && (
-              <section className="settings-page">
-                <p className="muted">Выбери, как будет выглядеть дневник</p>
-                <div className="theme-options">
-                  {([
-                    { value: 'light', label: 'Светлая', description: 'Светлый фон и спокойные зелёные оттенки' },
-                    { value: 'dark', label: 'Тёмная', description: 'Тёмный фон, комфортный при слабом освещении' },
-                    { value: 'system', label: 'Системная', description: 'Как в настройках устройства' },
-                  ] as { value: Theme; label: string; description: string }[]).map((option) => (
-                    <button
-                      key={option.value}
-                      className={theme === option.value ? 'theme-option selected' : 'theme-option'}
-                      onClick={() => setTheme(option.value)}
-                    >
-                      <span className="theme-radio" aria-hidden="true">{theme === option.value ? '✓' : ''}</span>
-                      <span className="theme-option-copy">
-                        <strong>{option.label}</strong>
-                        <small>{option.description}</small>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </section>
-            )}
+            {settingsPage === 'Оформление' && <AppearancePage theme={theme} onChange={setTheme} />}
 
             {settingsPage === 'Управление тегами' && (
               <section className="settings-page tag-management">
@@ -1318,160 +1191,14 @@ function App() {
               </section>
             )}
 
-            {settingsPage === 'Экспорт данных' && (
-              <section className="settings-page export-page">
-                <div className="export-section">
-                  <h2>Формат файла</h2>
-                  <div className="export-choice-row">
-                    {(['Excel (.xlsx)', 'CSV (.csv)'] as const).map((format) => (
-                      <button key={format} className={exportFormat === format ? 'export-choice active' : 'export-choice'} onClick={() => setExportFormat(format)}>
-                        <span className="export-radio">{exportFormat === format ? '✓' : ''}</span>
-                        {format}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="export-section">
-                  <h2>Период</h2>
-                  <select className="export-select" value={exportPeriod} onChange={(event) => setExportPeriod(event.target.value)}>
-                    {['Все записи', 'Текущий месяц', 'Последние 7 дней', 'Произвольный период'].map((item) => <option key={item}>{item}</option>)}
-                  </select>
-                  {exportPeriod === 'Произвольный период' && (
-                    <div className="date-range export-date-range">
-                      <label>С даты<input type="date" value={exportFrom} onChange={(event) => setExportFrom(event.target.value)} /></label>
-                      <label>По дату<input type="date" value={exportTo} onChange={(event) => setExportTo(event.target.value)} /></label>
-                    </div>
-                  )}
-                </div>
-                <div className="export-section">
-                  <h2>Какие данные включить</h2>
-                  <div className="export-includes">
-                    <div className="export-included required"><span className="export-check">✓</span><span><strong>Дата и время</strong><small>Обязательно для каждой записи</small></span><em>Обязательно</em></div>
-                    <div className="export-included required"><span className="export-check">✓</span><span><strong>Описание еды</strong><small>Текст и порция</small></span><em>Обязательно</em></div>
-                    <button className="export-included" onClick={() => setIncludeTags(!includeTags)}><span className={includeTags ? 'export-check checked' : 'export-check'}>{includeTags ? '✓' : ''}</span><span><strong>Теги и активность</strong><small>Категории и выбранные отметки</small></span></button>
-                    <button className="export-included" onClick={() => setIncludeCarbs(!includeCarbs)}><span className={includeCarbs ? 'export-check checked' : 'export-check'}>{includeCarbs ? '✓' : ''}</span><span><strong>Углеводы и комментарии</strong><small>Количество углеводов и заметки</small></span></button>
-                    <button className="export-included" onClick={() => setIncludeHunger(!includeHunger)}><span className={includeHunger ? 'export-check checked' : 'export-check'}>{includeHunger ? '✓' : ''}</span><span><strong>Голод и настроение</strong><small>Дополнительные поля записи</small></span></button>
-                  </div>
-                </div>
-                <div className="export-preview">
-                  <h2>Предварительный просмотр</h2>
-                  <div><span>Формат</span><strong>{exportFormat}</strong></div>
-                  <div><span>Период</span><strong>{exportPeriod === 'Произвольный период' ? `${exportFrom} — ${exportTo}` : exportPeriod}</strong></div>
-                  <div><span>Записей для экспорта</span><strong>{exportEntries.length}</strong></div>
-                  <p>В файл попадут записи за выбранный период и только отмеченные дополнительные поля.</p>
-                </div>
-                <div className="export-buttons">
-                  <button className="export-button" onClick={exportFormat === 'CSV (.csv)' ? exportCsv : () => void exportExcel()} disabled={exportEntries.length === 0}>Экспортировать {exportFormat === 'CSV (.csv)' ? 'CSV' : 'Excel'}-файл</button>
-                  {canShareExport && <button className="export-button secondary" onClick={() => void shareExport()} disabled={exportEntries.length === 0}>Поделиться</button>}
-                </div>
-                <p className="export-note">{exportEntries.length === 0 ? 'За выбранный период записей нет.' : exportFormat === 'CSV (.csv)' ? 'Файл CSV сохранится на устройство. Его можно открыть в Excel. Для Google Таблиц на телефоне лучше выбрать формат Excel.' : 'Файл Excel сохранится на устройство. Его можно открыть в Excel или Google Таблицах. Поделиться (например, отправить в Google Диск) можно файлом CSV.'}</p>
-              </section>
-            )}
+            {settingsPage === 'Экспорт данных' && <ExportPage entries={journalEntries} settings={exportSettings} />}
 
             {settingsPage === 'О приложении' && (
-              <section className="settings-page about-page">
-                <div className="about-hero">
-                  <img className="about-app-icon" src={`${import.meta.env.BASE_URL}app-icon.svg`} alt="" />
-                  <h2>Дневник питания</h2>
-                  <p>Личный дневник для наблюдения за питанием и повседневными привычками.</p>
-                </div>
-
-                <div className="about-section">
-                  <button className="about-section-toggle" onClick={() => setAboutSections((current) => ({ ...current, storage: !current.storage }))} aria-expanded={aboutSections.storage}>
-                    <span>Как хранятся данные</span><span className="about-section-chevron">{aboutSections.storage ? '⌃' : '⌄'}</span>
-                  </button>
-                  {aboutSections.storage && <p className="about-section-content">Записи хранятся на устройстве. Дневник рассчитан на работу без постоянного подключения к интернету. Автоматической синхронизации между устройствами нет.</p>}
-                </div>
-
-                <div className="about-section">
-                  <button className="about-section-toggle" onClick={() => setAboutSections((current) => ({ ...current, backup: !current.backup }))} aria-expanded={aboutSections.backup}>
-                    <span>Резервное копирование</span><span className="about-section-chevron">{aboutSections.backup ? '⌃' : '⌄'}</span>
-                  </button>
-                  {aboutSections.backup && (
-                    <div className="about-section-content">
-                      <p>Чтобы перенести данные или защитить их от потери, периодически создавай резервную копию в OneDrive.</p>
-                      <ol>
-                        <li>Открой раздел «Ещё» → «Резервное копирование».</li>
-                        <li>Нажми «Создать копию» и сохрани файл в OneDrive.</li>
-                        <li>Для восстановления выбери ранее созданную копию в этом же разделе.</li>
-                      </ol>
-                    </div>
-                  )}
-                </div>
-
-                <div className="about-section">
-                  <button className="about-section-toggle" onClick={() => setAboutSections((current) => ({ ...current, export: !current.export }))} aria-expanded={aboutSections.export}>
-                    <span>Экспорт данных</span><span className="about-section-chevron">{aboutSections.export ? '⌃' : '⌄'}</span>
-                  </button>
-                  {aboutSections.export && <p className="about-section-content">В разделе «Ещё» → «Экспорт данных» можно выбрать период и состав данных, а затем скачать файл Excel (.xlsx) или CSV. Для Google Таблиц на телефоне удобнее формат Excel.</p>}
-                </div>
-
-                <p className="about-disclaimer">Дневник предназначен для личных записей и не является медицинским приложением.</p>
-                <p className="about-version">Версия 1.0.0</p>
-              </section>
+              <AboutPage sections={aboutSections} onToggle={(section) => setAboutSections((current) => ({ ...current, [section]: !current[section] }))} />
             )}
 
             {settingsPage === 'Резервное копирование' && (
-              <section className="settings-page backup-page">
-                <p className="muted">Сохраняй копию дневника в OneDrive, чтобы при необходимости восстановить свои данные.</p>
-
-                <div className="backup-status-card">
-                  <div className="backup-status-icon">☁</div>
-                  <div>
-                    <strong>{backupInfo ? 'Последняя копия создана' : 'Резервных копий пока нет'}</strong>
-                    <p>{backupInfo
-                      ? `${new Date(backupInfo.createdAt).toLocaleString('ru-RU')} · ${(backupInfo.size / 1024).toFixed(1)} КБ`
-                      : 'После создания копии здесь появятся дата, время и размер файла.'}</p>
-                  </div>
-                </div>
-
-                <div className="backup-actions">
-                  <div className="backup-action-card">
-                    <div className="backup-action-icon">＋</div>
-                    <div className="backup-action-copy">
-                      <strong>Создать резервную копию</strong>
-                      <p>Скачать файл копии, который можно сохранить в OneDrive.</p>
-                    </div>
-                    <button className="backup-button" onClick={createBackup}>Создать копию</button>
-                  </div>
-
-                  <div className="backup-action-card">
-                    <div className="backup-action-icon">↻</div>
-                    <div className="backup-action-copy">
-                      <strong>Восстановить данные</strong>
-                      <p>Выбрать сохранённый файл резервной копии с устройства или из OneDrive.</p>
-                    </div>
-                    <button className="backup-button secondary" onClick={() => restoreFileInput.current?.click()}>Выбрать файл</button>
-                    <input
-                      ref={restoreFileInput}
-                      type="file"
-                      accept=".json,application/json"
-                      hidden
-                      onChange={(event) => {
-                        const file = event.target.files?.[0];
-                        if (file) void restoreBackup(file);
-                        event.target.value = '';
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div className="backup-section">
-                  <h2>Что входит в копию</h2>
-                  <ul className="backup-includes">
-                    <li>Все записи дневника: еда, дата и время</li>
-                    <li>Теги и их настройки</li>
-                    <li>Тема оформления</li>
-                  </ul>
-                </div>
-
-                <div className="backup-location-help">
-                  <strong>Где найти скачанную копию на телефоне</strong>
-                  <p>После нажатия «Создать копию» файл скачивается в Chrome. Обычно он находится в приложении «Файлы» → «Загрузки» или в Chrome → меню ⋮ → «Скачанные файлы».</p>
-                  <p>Чтобы восстановить данные, нажми «Выбрать файл» и выбери файл с названием, начинающимся на <b>food-diary-backup-</b>. Если сохраняешь копию в OneDrive, сначала выбери её там.</p>
-                </div>
-                <p className="backup-note">Восстановление заменяет текущие записи и настройки. Автоматической синхронизации нет.</p>
-              </section>
+              <BackupPage backupInfo={backupInfo} onCreate={createBackup} onRestore={(file) => void restoreBackup(file)} />
             )}
 
             {settingsPage && settingsPage !== 'Аналитика' && settingsPage !== 'Оформление' && settingsPage !== 'Управление тегами' && settingsPage !== 'Экспорт данных' && settingsPage !== 'Резервное копирование' && settingsPage !== 'О приложении' && (
