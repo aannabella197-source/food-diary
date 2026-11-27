@@ -1532,3 +1532,61 @@ body[data-theme="dark"] .field-error { color: #e0a49c; }
 }
 .more-menu { position: fixed; top: 75px; right: calc(max(0px, (100vw - 600px) / 2) + 20px); }
 body[data-theme="dark"] .more-menu-button { background: #2c3329; box-shadow: 0 2px 10px #0006; }
+
+/* Shared text styles for section pages: one size and colour for headings,
+   one for regular text and one for small notes. */
+.page-intro { margin: 0; color: #68745f; font-size: 13px; line-height: 1.5; }
+.page-note { margin: 0; padding: 0 4px; color: #92998c; font-size: 12px; line-height: 1.5; }
+.section-toggle { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 12px; padding: 0; border: 0; background: transparent; color: #58664e; font: inherit; font-size: 16px; font-weight: 600; text-align: left; cursor: pointer; }
+.section-toggle-chevron { color: #82976c; font-size: 18px; line-height: 1; }
+body[data-theme="dark"] .page-intro { color: #b2bea7; }
+body[data-theme="dark"] .section-toggle { color: #dce5d2; }
+body[data-theme="dark"] .section-toggle-chevron { color: #b2c69d; }
+
+/* Backup page */
+.backup-card { display: grid; gap: 14px; padding: 16px; border: 1px solid #e7eadf; border-radius: 15px; background: #fff; }
+.backup-status { display: flex; align-items: center; gap: 13px; }
+.backup-status h2 { margin: 0; color: #58664e; font-size: 16px; font-weight: 600; }
+.backup-status p { margin: 4px 0 0; color: #92998c; font-size: 12px; line-height: 1.5; }
+.backup-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.backup-section { padding: 16px; }
+.backup-includes { margin: 12px 0 0; font-size: 13px; color: #68745f; }
+.backup-section-content { display: grid; gap: 8px; margin-top: 12px; color: #68745f; font-size: 13px; line-height: 1.5; }
+.backup-section-content p { margin: 0; }
+.backup-section-content b { overflow-wrap: anywhere; }
+body[data-theme="dark"] .backup-card { border-color: #414a3b; background: #292f27; }
+body[data-theme="dark"] .backup-status h2 { color: #dce5d2; }
+body[data-theme="dark"] .backup-includes, body[data-theme="dark"] .backup-section-content { color: #b2bea7; }
+
+/* Entry editor: "Дата", "Время" and "Еда" headings match "Тип еды". */
+.editor-card .field-label { font-size: 16px; }
+
+/* Analytics: one size and colour for headings, regular text and notes. */
+.analytics-observations h3 { font-size: 16px; }
+.analytics-metrics span, .analytics-bar-row, .analytics-bar-row strong, .analytics-category,
+.analytics-comparison, .analytics-observations p { color: #68745f; font-size: 13px; }
+.analytics-bar-row strong, .analytics-category strong, .analytics-comparison strong { color: #526348; }
+.analytics-footnote, .analytics-empty, .analytics-disclaimer, .analytics-range-caption { color: #92998c; font-size: 12px; }
+body[data-theme="dark"] .analytics-comparison { color: #b2bea7; }
+
+/* Export page: headings on the left, controls on the right. */
+.export-page { gap: 12px; }
+.export-section { padding: 14px 16px; }
+.export-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.export-row h2, .export-section .export-row h2 { margin: 0; text-align: left; }
+.export-row .export-select { width: auto; min-width: 0; max-width: 58%; padding: 9px 10px; }
+.export-segmented { display: flex; padding: 3px; border-radius: 11px; background: #eef1e8; }
+.export-segmented button { min-width: 70px; padding: 8px 12px; border: 0; border-radius: 9px; background: transparent; color: #64715b; font: inherit; font-size: 14px; }
+.export-segmented button.active { background: #fff; color: #465c3b; font-weight: 600; box-shadow: 0 1px 4px #28351d1a; }
+.export-dropdown { display: inline-flex; align-items: center; gap: 8px; padding: 9px 12px; border: 1px solid #e4e9dc; border-radius: 11px; background: #f8f9f5; color: #465344; font: inherit; font-size: 14px; white-space: nowrap; }
+.export-section .export-includes { margin-top: 10px; }
+.export-summary { margin: 2px 0 0; color: #68745f; font-size: 13px; text-align: left; }
+.export-summary strong { color: #526348; }
+.export-buttons.two { grid-template-columns: 1fr 1fr; }
+.export-button { padding: 14px 10px; }
+body[data-theme="dark"] .export-segmented { background: #343c30; }
+body[data-theme="dark"] .export-segmented button { color: #b2bea7; }
+body[data-theme="dark"] .export-segmented button.active { background: #46553b; color: #edf4e6; }
+body[data-theme="dark"] .export-dropdown { border-color: #414a3b; background: #343c30; color: #d0ddc2; }
+body[data-theme="dark"] .export-summary { color: #b2bea7; }
+body[data-theme="dark"] .export-summary strong { color: #d0ddc2; }

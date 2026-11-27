@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import writeExcelFile from 'write-excel-file/browser';
 import type { JournalEntry } from '../types';
 import type { ExportSettings } from '../exportSettings';
@@ -12,6 +13,7 @@ export function ExportPage({ entries, settings }: Props) {
     exportFormat, setExportFormat, exportPeriod, setExportPeriod, exportFrom, setExportFrom, exportTo, setExportTo,
     includeTags, setIncludeTags, includeCarbs, setIncludeCarbs, includeHunger, setIncludeHunger, includeWeight, setIncludeWeight,
   } = settings;
+  const [kindsOpen, setKindsOpen] = useState(false);
 
   const exportDateKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   const exportEntries = entries
@@ -119,24 +121,35 @@ export function ExportPage({ entries, settings }: Props) {
     }
   };
 
+  const dataKinds = [
+    { label: 'Дата и время', hint: 'Обязательно для каждой записи', required: true },
+    { label: 'Описание еды', hint: 'Текст и порция', required: true },
+    { label: 'Теги и активность', hint: 'Категории и выбранные отметки', checked: includeTags, toggle: () => setIncludeTags(!includeTags) },
+    { label: 'Углеводы и комментарии', hint: 'Количество углеводов и заметки', checked: includeCarbs, toggle: () => setIncludeCarbs(!includeCarbs) },
+    { label: 'Голод и настроение', hint: 'Дополнительные поля записи', checked: includeHunger, toggle: () => setIncludeHunger(!includeHunger) },
+    { label: 'Вес тела', hint: 'Если он указан в записи', checked: includeWeight, toggle: () => setIncludeWeight(!includeWeight) },
+  ];
+  const chosenKinds = dataKinds.filter((kind) => kind.required || kind.checked).length;
+
   return (
     <section className="settings-page export-page">
-      <div className="export-section">
+      <div className="export-section export-row">
         <h2>Формат файла</h2>
-        <div className="export-choice-row">
+        <div className="export-segmented" role="group" aria-label="Формат файла">
           {(['Excel (.xlsx)', 'CSV (.csv)'] as const).map((format) => (
-            <button key={format} className={exportFormat === format ? 'export-choice active' : 'export-choice'} onClick={() => setExportFormat(format)}>
-              <span className="export-radio">{exportFormat === format ? '✓' : ''}</span>
-              {format}
+            <button key={format} className={exportFormat === format ? 'active' : ''} aria-pressed={exportFormat === format} onClick={() => setExportFormat(format)}>
+              {format === 'CSV (.csv)' ? 'CSV' : 'Excel'}
             </button>
           ))}
         </div>
       </div>
       <div className="export-section">
-        <h2>Период</h2>
-        <select className="export-select" value={exportPeriod} onChange={(event) => setExportPeriod(event.target.value)}>
-          {['Все записи', 'Текущий месяц', 'Последние 7 дней', 'Произвольный период'].map((item) => <option key={item}>{item}</option>)}
-        </select>
+        <div className="export-row">
+          <h2>Период</h2>
+          <select className="export-select" value={exportPeriod} onChange={(event) => setExportPeriod(event.target.value)} aria-label="Период">
+            {['Все записи', 'Текущий месяц', 'Последние 7 дней', 'Произвольный период'].map((item) => <option key={item}>{item}</option>)}
+          </select>
+        </div>
         {exportPeriod === 'Произвольный период' && (
           <div className="date-range export-date-range">
             <label>С даты<input type="date" value={exportFrom} onChange={(event) => setExportFrom(event.target.value)} /></label>
@@ -145,28 +158,28 @@ export function ExportPage({ entries, settings }: Props) {
         )}
       </div>
       <div className="export-section">
-        <h2>Какие данные включить</h2>
-        <div className="export-includes">
-          <div className="export-included required"><span className="export-check">✓</span><span><strong>Дата и время</strong><small>Обязательно для каждой записи</small></span><em>Обязательно</em></div>
-          <div className="export-included required"><span className="export-check">✓</span><span><strong>Описание еды</strong><small>Текст и порция</small></span><em>Обязательно</em></div>
-          <button className="export-included" onClick={() => setIncludeTags(!includeTags)}><span className={includeTags ? 'export-check checked' : 'export-check'}>{includeTags ? '✓' : ''}</span><span><strong>Теги и активность</strong><small>Категории и выбранные отметки</small></span></button>
-          <button className="export-included" onClick={() => setIncludeCarbs(!includeCarbs)}><span className={includeCarbs ? 'export-check checked' : 'export-check'}>{includeCarbs ? '✓' : ''}</span><span><strong>Углеводы и комментарии</strong><small>Количество углеводов и заметки</small></span></button>
-          <button className="export-included" onClick={() => setIncludeHunger(!includeHunger)}><span className={includeHunger ? 'export-check checked' : 'export-check'}>{includeHunger ? '✓' : ''}</span><span><strong>Голод и настроение</strong><small>Дополнительные поля записи</small></span></button>
-          <button className="export-included" onClick={() => setIncludeWeight(!includeWeight)}><span className={includeWeight ? 'export-check checked' : 'export-check'}>{includeWeight ? '✓' : ''}</span><span><strong>Вес тела</strong><small>Если он указан в записи</small></span></button>
+        <div className="export-row">
+          <h2>Какие данные включить</h2>
+          <button type="button" className="export-dropdown" aria-expanded={kindsOpen} onClick={() => setKindsOpen((open) => !open)}>
+            <span>Виды данных: {chosenKinds}/{dataKinds.length}</span><span aria-hidden="true">{kindsOpen ? '⌃' : '⌄'}</span>
+          </button>
         </div>
+        {kindsOpen && (
+          <div className="export-includes">
+            {dataKinds.map((kind) => kind.required ? (
+              <div className="export-included required" key={kind.label}><span className="export-check">✓</span><span><strong>{kind.label}</strong><small>{kind.hint}</small></span><em>Обязательно</em></div>
+            ) : (
+              <button className="export-included" key={kind.label} onClick={kind.toggle}><span className={kind.checked ? 'export-check checked' : 'export-check'}>{kind.checked ? '✓' : ''}</span><span><strong>{kind.label}</strong><small>{kind.hint}</small></span></button>
+            ))}
+          </div>
+        )}
       </div>
-      <div className="export-preview">
-        <h2>Предварительный просмотр</h2>
-        <div><span>Формат</span><strong>{exportFormat}</strong></div>
-        <div><span>Период</span><strong>{exportPeriod === 'Произвольный период' ? `${exportFrom} — ${exportTo}` : exportPeriod}</strong></div>
-        <div><span>Записей для экспорта</span><strong>{exportEntries.length}</strong></div>
-        <p>В файл попадут записи за выбранный период и только отмеченные дополнительные поля.</p>
-      </div>
-      <div className="export-buttons">
-        <button className="export-button" onClick={exportFormat === 'CSV (.csv)' ? exportCsv : () => void exportExcel()} disabled={exportEntries.length === 0}>Экспортировать {exportFormat === 'CSV (.csv)' ? 'CSV' : 'Excel'}-файл</button>
+      <p className="export-summary">Записей для экспорта: <strong>{exportEntries.length}</strong></p>
+      <div className={canShareExport ? 'export-buttons two' : 'export-buttons'}>
+        <button className="export-button" onClick={exportFormat === 'CSV (.csv)' ? exportCsv : () => void exportExcel()} disabled={exportEntries.length === 0}>Экспортировать</button>
         {canShareExport && <button className="export-button secondary" onClick={() => void shareExport()} disabled={exportEntries.length === 0}>Поделиться</button>}
       </div>
-      <p className="export-note">{exportEntries.length === 0 ? 'За выбранный период записей нет.' : exportFormat === 'CSV (.csv)' ? 'Файл CSV сохранится на устройство. Его можно открыть в Excel. Для Google Таблиц на телефоне лучше выбрать формат Excel.' : 'Файл Excel сохранится на устройство. Его можно открыть в Excel или Google Таблицах. Поделиться (например, отправить в Google Диск) можно файлом CSV.'}</p>
+      <p className="page-note">{exportEntries.length === 0 ? 'За выбранный период записей нет.' : exportFormat === 'CSV (.csv)' ? 'Файл CSV сохранится на устройство. Его можно открыть в Excel. Для Google Таблиц на телефоне лучше выбрать формат Excel.' : 'Файл Excel сохранится на устройство. Его можно открыть в Excel или Google Таблицах. Поделиться (например, отправить в Google Диск) можно файлом CSV.'}</p>
     </section>
   );
 }

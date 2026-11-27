@@ -27,11 +27,11 @@ export function AboutPage({ sections, onToggle }: Props) {
         </button>
         {sections.backup && (
           <div className="about-section-content">
-            <p>Чтобы перенести данные или защитить их от потери, периодически создавай резервную копию в OneDrive.</p>
+            <p>Чтобы перенести данные или защитить их от потери, периодически создавай резервную копию.</p>
             <ol>
-              <li>Открой раздел «Ещё» → «Резервное копирование».</li>
-              <li>Нажми «Создать копию» и сохрани файл в OneDrive.</li>
-              <li>Для восстановления выбери ранее созданную копию в этом же разделе.</li>
+              <li>Открой меню «⋯» → «Резервное копирование».</li>
+              <li>Нажми «Создать копию». Файл скачается на телефон; его можно вручную загрузить на облачный диск.</li>
+              <li>Для восстановления нажми «Восстановить» в этом же разделе и выбери файл копии.</li>
             </ol>
           </div>
         )}
@@ -41,7 +41,7 @@ export function AboutPage({ sections, onToggle }: Props) {
         <button className="about-section-toggle" onClick={() => onToggle('export')} aria-expanded={sections.export}>
           <span>Экспорт данных</span><span className="about-section-chevron">{sections.export ? '⌃' : '⌄'}</span>
         </button>
-        {sections.export && <p className="about-section-content">В разделе «Ещё» → «Экспорт данных» можно выбрать период и состав данных, а затем скачать файл Excel (.xlsx) или CSV. Для Google Таблиц на телефоне удобнее формат Excel.</p>}
+        {sections.export && <p className="about-section-content">В меню «⋯» → «Экспорт данных» можно выбрать период и состав данных, а затем скачать файл Excel (.xlsx) или CSV. Для Google Таблиц на телефоне удобнее формат Excel.</p>}
       </div>
 
       <p className="about-disclaimer">Дневник предназначен для личных записей и не является медицинским приложением.</p>
