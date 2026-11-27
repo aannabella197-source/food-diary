@@ -1607,3 +1607,7 @@ body[data-theme="dark"] .export-summary strong { color: #d0ddc2; }
 .backup-buttons button, .analytics-period .period-options button, .analytics-show-all,
 .analytics-metrics > div, .export-buttons button, .export-segmented button { text-align: center; }
 .analytics-section h2, .analytics-observations h3, .analytics-range-caption { text-align: left; }
+
+/* Entry view: values in regular text size, lighter than the labels. */
+.entry-detail-row p { color: #4a5543; font-size: 14px; font-weight: 400; }
+body[data-theme="dark"] .entry-detail-row p { color: #d0ddc2; }
