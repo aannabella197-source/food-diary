@@ -17,7 +17,7 @@ type Props = {
 
 export function EntryEditorPage({ draft, isEditing, foodTags, activityTags, tagIcons, onToggleTag, onBack, onSave }: Props) {
   const {
-    entryDate, setEntryDate, entryTime, setEntryTime, entryFood, setEntryFood, entryCarbs, setEntryCarbs, entryComment, setEntryComment, showAllFields, setShowAllFields, showAllFoodTags, setShowAllFoodTags, showAllActivityTags, setShowAllActivityTags, selectedTags, hunger, setHunger, mood, setMood, entryWeight, setEntryWeight,
+    entryDate, setEntryDate, entryTime, setEntryTime, entryFood, setEntryFood, entryCarbs, setEntryCarbs, showAllFields, setShowAllFields, showAllFoodTags, setShowAllFoodTags, showAllActivityTags, setShowAllActivityTags, selectedTags, hunger, setHunger, mood, setMood, entryWeight, setEntryWeight,
   } = draft;
   const weightInvalid = entryWeight.trim() !== '' && parseWeight(entryWeight) === null;
   return (
@@ -53,7 +53,7 @@ export function EntryEditorPage({ draft, isEditing, foodTags, activityTags, tagI
           </label>
         </section>
 
-        <section className="editor-card">
+        <section className="editor-card editor-side-row editor-side-tags">
           <div className="editor-section-title">Тип еды</div>
           <div className="tag-gallery">
             {(showAllFoodTags ? foodTags : foodTags.slice(0, 4)).map((tag) => (
@@ -83,7 +83,7 @@ export function EntryEditorPage({ draft, isEditing, foodTags, activityTags, tagI
           </div>
         </section>
 
-        <section className="editor-card">
+        <section className="editor-card editor-side-row editor-side-tags">
           <div className="editor-section-title">Активность</div>
           <div className="tag-gallery">
             {(showAllActivityTags ? activityTags : activityTags.slice(0, 4)).map((tag) => (
@@ -114,12 +114,6 @@ export function EntryEditorPage({ draft, isEditing, foodTags, activityTags, tagI
 
         {showAllFields && (
           <>
-            <section className="editor-card">
-              <div className="editor-section-title">Комментарий</div>
-              <label className="field-label">
-                <textarea rows={3} value={entryComment} onChange={(event) => setEntryComment(event.target.value)} placeholder="Дополнительные заметки к записи" />
-              </label>
-            </section>
 
             <section className="editor-card">
               <div className="editor-section-title">Уровень голода</div>

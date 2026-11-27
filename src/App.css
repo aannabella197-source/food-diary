@@ -1619,3 +1619,9 @@ body[data-theme="dark"] .entry-detail-row p { color: #d0ddc2; }
 /* Analytics: regular text a little larger. */
 .analytics-metrics span, .analytics-bar-row, .analytics-bar-row strong, .analytics-category,
 .analytics-comparison, .analytics-observations p { font-size: 14px; }
+
+/* Entry editor: tag lists to the right of their headings. */
+.editor-side-tags { align-items: start; }
+.editor-side-tags > .editor-section-title { grid-row: 1 / span 2; padding-top: 8px; }
+.editor-side-tags > .tag-gallery, .editor-side-tags > .show-tags { grid-column: 2; }
+.editor-side-tags > .show-tags { justify-self: start; }
