@@ -1,3 +1,4 @@
+import { Fragment, useEffect, useRef } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { GripVertical } from 'lucide-react';
 import type { JournalEntry } from '../types';
@@ -114,6 +115,48 @@ export function TagManagementPage({
     setDeleteTag(null);
   };
 
+  // The edit form opens under the tag being edited (or at the top for a new tag)
+  // and is scrolled into view so it is visible without scrolling by hand.
+  const editPanelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (tagEditorOpen) editPanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [tagEditorOpen, editingTag]);
+  const editPanel = (
+    <div className="tag-edit-panel" ref={editPanelRef}>
+      <label>Название тега
+        <input value={tagDraft} maxLength={30} onChange={(event) => setTagDraft(event.target.value)} placeholder="Например, Салат" />
+      </label>
+      {editingTag && tagDraft.trim() && tagDraft.trim() !== editingTag && renameEntryCount > 0 && (
+        <span className="tag-rename-note">Название изменится и в записях дневника: {renameEntryCount}</span>
+      )}
+      <span className="muted">Выбери значок</span>
+      <div className="tag-icon-picker">
+        {tagIconOptions.map(({ value, label }) => (
+          <button
+            type="button"
+            key={value}
+            title={label}
+            aria-label={label}
+            aria-pressed={tagIcon === value}
+            className={tagIcon === value ? 'selected' : ''}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              setTagIcon(value);
+            }}
+          >
+            <TagGlyph name={value} size={18} />
+            <span className="tag-icon-label">{label}</span>
+          </button>
+        ))}
+      </div>
+      <div className="tag-edit-actions">
+        <button onClick={() => { setTagEditorOpen(false); setEditingTag(null); }}>Отмена</button>
+        <button className="primary" disabled={!tagDraft.trim() || (currentTags.some((tag) => tag.toLowerCase() === tagDraft.trim().toLowerCase() && tag !== editingTag))} onClick={saveTag}>Сохранить</button>
+      </div>
+    </div>
+  );
+
   return (
     <section className="settings-page tag-management">
       <p className="muted">Две категории тегов. До 30 тегов в каждой.</p>
@@ -125,41 +168,7 @@ export function TagManagementPage({
         <span>{currentTags.length} из 30 тегов</span>
         <button className="tag-add-button" disabled={currentTags.length >= 30} onClick={() => { setEditingTag(null); setTagDraft(''); setTagIcon('tag'); setTagEditorOpen(true); }}>+ Добавить тег</button>
       </div>
-      {tagEditorOpen && (
-        <div className="tag-edit-panel">
-          <label>Название тега
-            <input value={tagDraft} maxLength={30} onChange={(event) => setTagDraft(event.target.value)} placeholder="Например, Салат" />
-          </label>
-          {editingTag && tagDraft.trim() && tagDraft.trim() !== editingTag && renameEntryCount > 0 && (
-            <span className="tag-rename-note">Название изменится и в записях дневника: {renameEntryCount}</span>
-          )}
-          <span className="muted">Выбери значок</span>
-          <div className="tag-icon-picker">
-            {tagIconOptions.map(({ value, label }) => (
-              <button
-                type="button"
-                key={value}
-                title={label}
-                aria-label={label}
-                aria-pressed={tagIcon === value}
-                className={tagIcon === value ? 'selected' : ''}
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  setTagIcon(value);
-                }}
-              >
-                <TagGlyph name={value} size={18} />
-                <span className="tag-icon-label">{label}</span>
-              </button>
-            ))}
-          </div>
-          <div className="tag-edit-actions">
-            <button onClick={() => { setTagEditorOpen(false); setEditingTag(null); }}>Отмена</button>
-            <button className="primary" disabled={!tagDraft.trim() || (currentTags.some((tag) => tag.toLowerCase() === tagDraft.trim().toLowerCase() && tag !== editingTag))} onClick={saveTag}>Сохранить</button>
-          </div>
-        </div>
-      )}
+      {tagEditorOpen && !editingTag && editPanel}
       <div className="tag-management-hint">
         <button type="button" className="tag-hint-toggle" aria-expanded={tagHintOpen} onClick={() => setTagHintOpen((open) => !open)}>
           <span>Подсказка</span><span aria-hidden="true">{tagHintOpen ? '⌃' : '⌄'}</span>
@@ -175,9 +184,9 @@ export function TagManagementPage({
       </div>
       <div className="managed-tag-list">
         {currentTags.map((tag) => (
+          <Fragment key={tag}>
           <div
             className={`managed-tag${currentDisabled.includes(tag) ? ' disabled' : ''}${draggedTag === tag ? ' dragging' : ''}${dragOverTag === tag && draggedTag !== tag ? ' drag-over' : ''}`}
-            key={tag}
             data-managed-tag={tag}
             draggable
             onDragStart={(event) => {
@@ -226,6 +235,8 @@ export function TagManagementPage({
               </div>
             )}
           </div>
+          {tagEditorOpen && editingTag === tag && editPanel}
+          </Fragment>
         ))}
       </div>
       {orphanTags.length > 0 && (
