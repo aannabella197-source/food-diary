@@ -42,7 +42,7 @@ export function EntryEditorPage({ draft, isEditing, foodTags, activityTags, tagI
         </section>
 
         <section className="editor-card">
-          <label className="field-label">
+          <label className="field-label editor-side-row">
             Еда
             <textarea
               rows={3}
@@ -75,7 +75,7 @@ export function EntryEditorPage({ draft, isEditing, foodTags, activityTags, tagI
           </button>
         </section>
 
-        <section className="editor-card">
+        <section className="editor-card editor-side-row">
           <div className="editor-section-title">Углеводы</div>
           <div className="field-with-unit">
             <input type="number" min="0" placeholder="0" value={entryCarbs} onChange={(event) => setEntryCarbs(event.target.value)} />
@@ -160,7 +160,7 @@ export function EntryEditorPage({ draft, isEditing, foodTags, activityTags, tagI
               </div>
             </section>
 
-            <section className="editor-card">
+            <section className="editor-card editor-side-row">
               <div className="editor-section-title">Вес тела</div>
               <div className="field-with-unit">
                 <input type="text" inputMode="decimal" placeholder="Например, 63,5" value={entryWeight} onChange={(event) => setEntryWeight(event.target.value)} aria-invalid={weightInvalid} />

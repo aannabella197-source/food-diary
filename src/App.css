@@ -1590,3 +1590,20 @@ body[data-theme="dark"] .export-segmented button.active { background: #46553b; c
 body[data-theme="dark"] .export-dropdown { border-color: #414a3b; background: #343c30; color: #d0ddc2; }
 body[data-theme="dark"] .export-summary { color: #b2bea7; }
 body[data-theme="dark"] .export-summary strong { color: #d0ddc2; }
+
+/* Entry editor (layout "Г"): headings on the left; for Еда, Углеводы and
+   Вес тела the field sits to the right of the heading. */
+.editor-main .editor-card { text-align: left; }
+.editor-main .show-tags { margin: 14px 0 0; padding: 5px 0; }
+.editor-side-row { display: grid; grid-template-columns: 92px minmax(0, 1fr); column-gap: 12px; align-items: center; }
+.editor-side-row > .editor-section-title { margin: 0; }
+.editor-side-row .field-error { grid-column: 2; }
+.field-label.editor-side-row { align-items: start; gap: 0 12px; }
+.field-label.editor-side-row textarea { grid-column: 2; }
+.editor-side-row .field-with-unit { max-width: 180px; }
+
+/* Backup, analytics and export pages: text aligned to the left. */
+.backup-page, .analytics-page, .export-page { text-align: left; }
+.backup-buttons button, .analytics-period .period-options button, .analytics-show-all,
+.analytics-metrics > div, .export-buttons button, .export-segmented button { text-align: center; }
+.analytics-section h2, .analytics-observations h3, .analytics-range-caption { text-align: left; }
