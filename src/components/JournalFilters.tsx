@@ -32,29 +32,30 @@ export function JournalFilters({
   searchText, setSearchText, filtersOpen, setFiltersOpen, journalPeriod, setJournalPeriod, dateFrom, setDateFrom, dateTo, setDateTo,
   filterTags, toggleFilterTag, resetFilters, foodTags, disabledFoodTags, activityTags, disabledActivityTags, tagIcons,
 }: Props) {
+  const activeFilterCount = filterTags.length + (journalPeriod !== 'Все записи' ? 1 : 0);
   return (
     <>
-      <div className="journal-search">
-        <input
-          type="search"
-          placeholder="Поиск по еде, комментариям и тегам"
-          value={searchText}
-          onChange={(event) => setSearchText(event.target.value)}
-        />
-      </div>
+      <div className="journal-search-row">
+        <div className="journal-search">
+          <input
+            type="search"
+            placeholder="Поиск по записям"
+            aria-label="Поиск по еде, комментариям и тегам"
+            value={searchText}
+            onChange={(event) => setSearchText(event.target.value)}
+          />
+        </div>
 
-      <button
-        className="filter-toggle"
-        onClick={() => setFiltersOpen(!filtersOpen)}
-        aria-expanded={filtersOpen}
-      >
-        <span>Фильтры</span>
-        <span>{filterTags.length + (journalPeriod !== 'Все записи' ? 1 : 0) > 0
-          ? `Выбрано: ${filterTags.length + (journalPeriod !== 'Все записи' ? 1 : 0)}`
-          : ''}
-        </span>
-        <span>{filtersOpen ? '⌃' : '⌄'}</span>
-      </button>
+        <button
+          className="filter-toggle"
+          onClick={() => setFiltersOpen(!filtersOpen)}
+          aria-expanded={filtersOpen}
+        >
+          <span>Фильтры</span>
+          {activeFilterCount > 0 && <span className="filter-count" aria-label={`Выбрано: ${activeFilterCount}`}>{activeFilterCount}</span>}
+          <span aria-hidden="true">{filtersOpen ? '⌃' : '⌄'}</span>
+        </button>
+      </div>
 
       {filtersOpen && (
         <section className="filter-panel">
