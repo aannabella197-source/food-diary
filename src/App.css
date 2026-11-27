@@ -1611,3 +1611,11 @@ body[data-theme="dark"] .export-summary strong { color: #d0ddc2; }
 /* Entry view: values in regular text size, lighter than the labels. */
 .entry-detail-row p { color: #4a5543; font-size: 14px; font-weight: 400; }
 body[data-theme="dark"] .entry-detail-row p { color: #d0ddc2; }
+
+/* Main screen: slightly larger tag names in entry cards. */
+.journal-entry .tag { font-size: 13px; }
+.journal-entry .tag svg { width: 14px; height: 14px; }
+
+/* Analytics: regular text a little larger. */
+.analytics-metrics span, .analytics-bar-row, .analytics-bar-row strong, .analytics-category,
+.analytics-comparison, .analytics-observations p { font-size: 14px; }
